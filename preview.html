@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLN Animation Kit - Preview</title>
+<style>
+:root{
+  --navy:#0B3D8C; --selected:#386AF6; --ink:#0d2543; --muted:#5b7396;
+  --line:#d7e3f2; --card:#ffffff; --bg:#eef5fc;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);
+  font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;padding:28px 20px 70px;}
+h1{font-size:26px;color:var(--navy);letter-spacing:-.3px;}
+.sub{color:var(--muted);margin:6px 0 24px;max-width:780px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:20px;
+  max-width:1120px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  display:flex;flex-direction:column;scroll-margin-top:20px;}
+.card:target{border-color:var(--selected);box-shadow:0 0 0 3px rgba(56,106,246,.18);}
+.hd{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;
+  align-items:baseline;gap:8px;flex-wrap:wrap;}
+.hd b{font-size:15px;color:var(--navy);}
+/* per-card mute. Each card owns its own sound so one noisy effect can be silenced
+   while another is being judged - a single global switch made that impossible. */
+.hd .spk{margin-left:auto;padding:4px 6px;line-height:0;border-radius:7px;
+  border:1px solid var(--line);background:#fff;color:var(--navy);cursor:pointer;}
+.hd .spk:hover{background:#f0f6ff;border-color:var(--selected);}
+.hd .spk svg{width:17px;height:17px;display:block;}
+.hd .spk .slash{opacity:0;}
+.hd .spk.off{background:#fdf1f1;border-color:#eec7c7;color:#b04a4a;}
+.hd .spk.off .wave{opacity:0;}
+.hd .spk.off .slash{opacity:1;}
+.stage{height:250px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#5cc0f7 0%,#8fd6fb 55%,#c4e9fd 100%);}
+.ft{padding:10px 15px;border-top:1px solid var(--line);display:flex;gap:10px;
+  align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;
+  color:var(--navy);padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600;
+  white-space:nowrap;}
+button:hover{background:#f0f6ff;border-color:var(--selected);}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
+  background:#eef3fa;padding:1px 5px;border-radius:4px;color:#264b7d;}
+a{color:var(--selected);}
+
+/* ---------- 1. sky drift (scaled to the tile: px, not vmax - see the note) ---------- */
+.sky{position:absolute;inset:0;overflow:hidden;}
+.sky i{position:absolute;left:50%;top:50%;width:var(--s);aspect-ratio:1;
+  margin:calc(var(--s)/-2) 0 0 calc(var(--s)/-2);background:center/contain no-repeat;opacity:0;
+  animation:sgFly var(--t) linear infinite;animation-delay:var(--d);}
+.sky .s1{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 5.5c1.6 0 3 .9 3.7 2.4l6.1 12.4 13.7 2c1.6.2 3 1.4 3.5 3s.1 3.3-1.1 4.4l-9.9 9.6 2.3 13.6c.3 1.6-.4 3.3-1.7 4.2s-3.1 1.1-4.6.3L32 51l-12.2 6.4c-1.5.8-3.2.7-4.6-.3s-2-2.6-1.7-4.2l2.3-13.6-9.9-9.6c-1.2-1.1-1.6-2.9-1.1-4.4s1.9-2.7 3.5-3l13.7-2 6.1-12.4C29 6.4 30.4 5.5 32 5.5z' fill='%23fff'/%3E%3C/svg%3E");}
+.sky .s2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 5.5c1.6 0 3 .9 3.7 2.4l6.1 12.4 13.7 2c1.6.2 3 1.4 3.5 3s.1 3.3-1.1 4.4l-9.9 9.6 2.3 13.6c.3 1.6-.4 3.3-1.7 4.2s-3.1 1.1-4.6.3L32 51l-12.2 6.4c-1.5.8-3.2.7-4.6-.3s-2-2.6-1.7-4.2l2.3-13.6-9.9-9.6c-1.2-1.1-1.6-2.9-1.1-4.4s1.9-2.7 3.5-3l13.7-2 6.1-12.4C29 6.4 30.4 5.5 32 5.5z' fill='none' stroke='%23fff' stroke-width='4.5' stroke-linejoin='round'/%3E%3C/svg%3E");}
+.sky .s3{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 2c1.6 12.6 15.4 26.4 30 30-14.6 3.6-28.4 17.4-30 30-1.6-12.6-15.4-26.4-30-30C16.6 28.4 30.4 14.6 32 2z' fill='%23fff'/%3E%3C/svg%3E");}
+.sky .s4{border-radius:50%;border:1.5px solid rgba(255,255,255,.92);}
+.sky .s5{border-radius:50%;background:rgba(255,255,255,.92);}
+/* kit glow: static shadow on a pseudo-element, animated opacity (composited) */
+.sky i::after{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:inherit;border:inherit;filter:drop-shadow(0 0 5px rgba(255,255,255,.95));
+  opacity:0;animation:sgGlowOpacity var(--g) ease-in-out infinite alternate;
+  animation-delay:var(--gd);}
+@keyframes sgFly{
+  0%{transform:translate(var(--x1),var(--y1));opacity:0;}
+  10%{opacity:var(--o);} 84%{opacity:var(--o);}
+  100%{transform:translate(var(--x2),var(--y2));opacity:0;}
+}
+@keyframes sgGlowOpacity{from{opacity:0;}to{opacity:1;}}
+.sky i.popped{visibility:hidden;}
+.sg-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:190px;height:82px;background:rgba(255,255,255,.86);border-radius:14px;
+  display:grid;place-items:center;font-weight:700;color:var(--navy);font-size:13px;}
+
+/* ---------- 2. tap burst ---------- */
+.sg-burst{position:fixed;z-index:95;width:0;height:0;pointer-events:none;}
+.sg-burst.k-star{--shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 5.5c1.6 0 3 .9 3.7 2.4l6.1 12.4 13.7 2c1.6.2 3 1.4 3.5 3s.1 3.3-1.1 4.4l-9.9 9.6 2.3 13.6c.3 1.6-.4 3.3-1.7 4.2s-3.1 1.1-4.6.3L32 51l-12.2 6.4c-1.5.8-3.2.7-4.6-.3s-2-2.6-1.7-4.2l2.3-13.6-9.9-9.6c-1.2-1.1-1.6-2.9-1.1-4.4s1.9-2.7 3.5-3l13.7-2 6.1-12.4C29 6.4 30.4 5.5 32 5.5z' fill='%23fff'/%3E%3C/svg%3E");}
+.sg-burst.k-spark{--shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 2c1.6 12.6 15.4 26.4 30 30-14.6 3.6-28.4 17.4-30 30-1.6-12.6-15.4-26.4-30-30C16.6 28.4 30.4 14.6 32 2z' fill='%23fff'/%3E%3C/svg%3E");}
+.sg-burst.k-dot{--shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23fff'/%3E%3C/svg%3E");}
+.sg-burst .fl{position:absolute;left:0;top:0;width:calc(var(--bs)*3);height:calc(var(--bs)*3);
+  margin:calc(var(--bs)*-1.5) 0 0 calc(var(--bs)*-1.5);border-radius:50%;
+  background:radial-gradient(circle,rgba(244,250,255,1) 0%,rgba(96,165,250,.92) 38%,rgba(30,58,138,0) 76%);
+  animation:sgFlash .36s ease-out forwards;}
+.sg-burst i{position:absolute;left:0;top:0;width:var(--ps);height:var(--ps);
+  margin:calc(var(--ps)/-2) 0 0 calc(var(--ps)/-2);background:currentColor;
+  -webkit-mask:var(--shape) center/contain no-repeat;mask:var(--shape) center/contain no-repeat;
+  filter:drop-shadow(0 0 3px currentColor) drop-shadow(0 0 8px currentColor);
+  animation:sgSpark var(--sd) cubic-bezier(.12,.72,.24,1) forwards;animation-delay:var(--sdl);}
+@keyframes sgFlash{0%{transform:scale(.15);opacity:1;}100%{transform:scale(1.6);opacity:0;}}
+@keyframes sgSpark{
+  0%{transform:translate(0,0) scale(.35);opacity:0;}
+  14%{opacity:1;transform:translate(calc(var(--dx)*.3),calc(var(--dy)*.3)) scale(1.12);}
+  100%{transform:translate(var(--dx),calc(var(--dy) + var(--gy))) scale(.3);opacity:0;}
+}
+
+/* ---------- 3. nudge hand tap ripple ----------
+   Real assets, inlined: nudge_hand_new.svg + nudge_fx_ring_inner/outer.svg + nudge_fx_sparks.svg.
+   Geometry is the shipped maths: #nudgeHand is 86x108; nudge_hand_new.svg (75x94, viewBox
+   33 24 75 94) renders at object-fit:contain scale 1.1467, putting its fingertip at (34.2, 15.8)
+   in the box. The 94.6px FX square is offset to centre exactly there. */
+:root{
+  --nh-hand:url("data:image/svg+xml,%3Csvg width='75' height='94' viewBox='33 24 75 94' fill='none' xmlns='http://www.w3.org/2000/svg'%3E %3Cpath d='M61.8426 30.2001C64.2037 29.9494 66.7397 30.8357 68.3931 32.6032C71.3117 35.7248 70.9471 40.4014 71.0352 44.3553L71.2323 53.0653C75.2426 51.2301 78.6111 52.4559 81.0214 56.1288C81.2198 56.0168 81.4218 55.9116 81.6273 55.812C85.8352 53.7812 89.5781 55.7404 91.536 59.8139L91.5783 59.7967C94.109 58.6781 97.5157 59.1352 99.2434 61.4843C103.807 67.6901 102.537 78.2219 101.14 85.2951C101.109 86.0017 100.126 87.9991 100.095 88.527C100.022 89.7752 97.5165 93.1042 97.4798 93.7904C99.6953 94.9488 100.337 97.0062 100.53 99.2891C100.708 101.395 100.826 105.111 99.2429 106.722C94.8803 111.163 85.7239 111.946 79.8342 112.389C79.6066 112.407 79.3788 112.419 79.151 112.43C73.7187 112.64 62.9902 112.682 58.7225 108.814C56.9684 107.224 56.3896 104.846 56.321 102.576C56.253 100.317 56.5044 98.7045 58.092 97.021C57.0228 96.3269 56.2057 95.7951 55.2016 95.0022C51.126 91.786 49.5237 87.2176 46.4819 83.161C44.5457 80.4436 42.004 78.295 40.2146 75.466C38.2715 72.3926 38.3247 68.8764 40.6076 66.1206C42.0746 64.327 44.2089 63.2165 46.5281 63.0406C50.1618 62.747 52.1645 64.1598 54.7904 66.3486C54.8111 59.8919 54.3203 53.0925 54.37 46.6096C54.3918 43.7819 54.155 40.0448 54.6394 37.3294C54.8928 35.8236 55.4989 34.4061 56.408 33.1935C57.8007 31.3676 59.5936 30.4807 61.8426 30.2001Z' fill='%23001D75'/%3E %3Cpath d='M57.5924 36.1066C58.4462 33.2579 62.3086 31.9006 64.9556 33.0653C67.4505 34.1643 68.2498 37.022 68.3998 39.4939C68.6042 42.848 68.6231 46.2022 68.6949 49.5549C68.7411 52.6355 68.8503 55.7156 69.0246 58.793C69.1008 59.2684 69.21 60.9573 69.6479 61.1399C70.2114 60.0628 69.8005 58.0571 71.2825 56.2476C72.0262 55.3344 73.1209 54.7818 74.3025 54.7259C75.6634 54.6509 76.6851 54.9588 77.7011 55.8905C80.4207 58.2867 79.1987 61.7988 80.1089 62.9629C80.8751 62.1976 80.5479 59.928 81.6284 58.8161C83.1071 57.2937 86.067 57.0426 87.672 58.5178C89.0181 59.6826 89.2875 60.4901 89.6759 62.1559C89.8582 62.9345 90.0319 65.5577 90.4056 66.0696C90.9889 65.5507 90.7914 64.1211 91.4598 63.2095C93.047 61.0423 94.875 61.2955 96.9676 62.6241C97.2454 62.8326 97.3279 62.8547 97.479 63.1668C99.6861 66.269 99.7121 70.0198 99.8027 73.6979C99.8625 76.1093 99.7401 79.1366 99.3569 81.5315C98.7072 85.5916 97.2908 89.9198 94.7003 93.1364C93.795 94.2461 93.3462 93.9335 93.2974 95.6426C93.5811 95.9099 93.674 96.0359 94.0433 96.1681C97.7904 94.2746 98.2787 99.2511 98.2361 101.652C98.1723 105.262 96.4528 106.336 93.3344 107.445C90.913 108.289 88.4399 108.796 85.8836 109.153C79.4771 110.168 72.9292 110.327 66.4753 109.269C63.789 108.828 60.2928 108.187 59.2303 105.155C58.7522 103.689 58.6222 100.954 59.2622 99.5353C59.8014 98.3396 61.3645 97.7751 62.5499 98.4606C62.9357 98.1452 62.9747 98.1325 63.1926 97.6961C62.7806 96.0768 61.4007 95.796 59.982 95.1153C57.4746 93.9136 54.8093 91.7658 53.3731 89.3527C50.6147 84.727 47.6201 80.0168 43.8007 76.1684C37.9841 70.3094 43.7301 63.0919 50.5834 66.3057C52.3269 66.9289 54.0827 69.253 54.9951 70.7991C55.4754 71.6133 55.6151 72.034 56.3986 72.6225C57.6345 72.0204 57.4762 71.584 57.409 70.2294C56.9832 61.6552 56.7757 53.0481 56.7966 44.4724C56.803 41.8764 56.767 38.5336 57.5924 36.1066Z' fill='%23FEBE8D'/%3E %3Cpath d='M93.2946 95.6422C93.5783 95.9094 93.6712 96.0354 94.0405 96.1677C97.7876 94.2742 98.2759 99.2506 98.2333 101.651C98.1695 105.261 96.45 106.336 93.3316 107.444C90.9102 108.289 88.4371 108.795 85.8808 109.153C79.4743 110.167 72.9264 110.326 66.4725 109.269C63.7862 108.827 60.29 108.187 59.2275 105.154C58.7494 103.689 58.6194 100.954 59.2594 99.5349C59.7986 98.3392 61.3617 97.7747 62.5471 98.4602C62.9329 98.1448 62.9719 98.1321 63.1898 97.6957C70.3918 99.1827 81.0325 98.2662 88.2406 97.0374C89.6336 96.7994 91.9038 96.0701 93.2946 95.6422Z' fill='%23FFBE04'/%3E %3Cpath d='M93.2953 95.6425C93.5791 95.9097 93.6719 96.0357 94.0412 96.1679C93.5364 96.9203 90.9718 97.3532 90.0713 97.5655C82.7723 99.2797 75.0522 99.5611 67.5525 99.2242C66.5021 99.1764 63.3682 99.0465 62.5479 98.4605C62.9337 98.1451 62.9727 98.1324 63.1905 97.6959C70.3925 99.183 81.0332 98.2665 88.2413 97.0377C89.6343 96.7997 91.9045 96.0703 93.2953 95.6425Z' fill='%23D67C02'/%3E %3Cpath d='M95.0915 96.8688C95.6567 96.828 95.8266 96.7897 96.1563 97.294C96.121 97.4649 96.0945 97.6786 95.9167 97.7611C88.4554 101.228 75.7285 101.946 67.8914 101.356C67.2715 101.315 66.5911 101.238 65.9663 101.181C68.1818 99.7479 68.5863 100.135 71.2147 100.169C72.7597 100.185 74.3052 100.174 75.849 100.134C82.4043 100.004 88.8886 98.904 95.0915 96.8688Z' fill='%23FED740'/%3E %3Cpath d='M97.4805 63.1666C99.6876 66.2688 99.7136 70.0196 99.8042 73.6977C99.864 76.1091 99.7416 79.1364 99.3584 81.5313C98.7086 85.5914 97.2923 89.9196 94.7017 93.1361C93.7964 94.2459 93.3476 93.9333 93.2989 95.6424C91.908 96.0702 89.6379 96.7996 88.2448 97.0376C81.0367 98.2664 70.3961 99.1829 63.194 97.6958C62.7821 96.0766 61.4021 95.7958 59.9834 95.1151C57.4761 93.9134 54.8108 91.7655 53.3746 89.3524C50.6162 84.7268 47.6215 80.0166 43.8022 76.1682C37.9856 70.3091 43.7315 63.0916 50.5848 66.3054C49.8531 66.5066 48.1755 66.1146 47.2432 66.2039C43.3748 66.5758 42.1627 70.0981 44.5332 73.1146C46.3149 75.3809 48.4156 77.157 50.2599 79.3449C53.3034 82.9539 55.3387 87.34 59.0603 90.3549C65.1107 95.2542 73.4033 96.4915 80.8612 95.7099C85.4569 95.2284 90.3265 93.6321 93.2784 89.8708C97.4727 84.5242 98.52 76.14 98.2887 69.4746C98.2091 67.1752 97.7293 65.3485 97.4805 63.1666Z' fill='%23FEA366'/%3E %3Cpath d='M56.3994 72.622C57.6353 72.0199 57.477 71.5835 57.4098 70.2289C56.984 61.6547 56.7764 53.0476 56.7973 44.4719C56.8037 41.8759 56.7677 38.5331 57.5931 36.1061C57.3 39.365 57.3715 44.5068 57.4181 47.7862C57.5022 52.9629 57.6193 58.1406 57.7695 63.3169C57.8541 66.0197 58.0943 68.7747 58.0961 71.4723C58.0966 72.2047 57.3458 72.832 56.5836 72.7632L56.3994 72.622Z' fill='%23FEA366'/%3E %3Cpath d='M69.0236 58.7926C69.0999 59.2679 69.2091 60.9569 69.647 61.1395C70.2104 60.0624 69.7995 58.0566 71.2816 56.2472C72.0253 55.334 73.12 54.7814 74.3016 54.7255C75.6625 54.6504 76.6841 54.9583 77.7002 55.8901C69.6473 53.7121 71.8132 62.1603 69.3566 61.6419C68.4992 61.0087 69.0897 59.7427 69.0236 58.7926Z' fill='%23FEA366'/%3E %3Cpath d='M80.1088 62.9633C80.875 62.198 80.5478 59.9284 81.6283 58.8164C83.107 57.294 86.0669 57.043 87.6719 58.5181C80.1592 57.2952 82.1298 63.2051 80.2927 63.1407L80.1088 62.9633Z' fill='%23FEA366'/%3E %3Cpath d='M90.4009 66.0691C90.9841 65.5502 90.7866 64.1206 91.4551 63.209C93.0422 61.0418 94.8703 61.295 96.9628 62.6236C90.6532 61.6815 92.5481 65.6073 90.4009 66.0691Z' fill='%23FEA366'/%3E %3Cpath d='M62.5199 34.2631C65.8349 34.4021 66.2527 36.2202 66.5304 39.1569C66.7843 41.8462 65.166 41.5307 63.1804 41.5531C62.3438 41.5695 60.1078 41.6974 59.6674 41.2017C58.7011 40.1148 59.1284 36.4539 60.0381 35.4345C60.9496 34.4152 61.418 34.3648 62.5199 34.2631Z' fill='%23FEE3D2'/%3E %3C/svg%3E");
+  --nh-ri:url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='27.80 -11.40 120 120' fill='none' xmlns='http://www.w3.org/2000/svg'%3E %3Cpath d='M74.7757 62.4271C71.7856 60.039 70.1885 54.3243 70.294 50.6368C70.6248 39.083 82.1195 31.4727 92.9943 34.5956C100.511 36.7542 105.619 44.2334 105.309 51.9674C105.173 55.2488 103.551 59.8473 101.132 62.1429L101.072 62.1205C100.83 61.7166 100.833 59.7674 100.949 59.2532C102.01 57.105 102.864 55.6541 103.164 53.1689C104.7 40.4571 90.8047 31.1791 79.8177 38.1044C77.0204 39.8676 75.1828 41.8935 73.7401 44.9505C71.6928 49.2887 72.1111 55.3851 74.7391 59.3739C74.9118 60.2866 74.9081 61.5047 74.7757 62.4271Z' fill='%23C1EFFE'/%3E %3C/svg%3E");
+  --nh-ro:url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='27.80 -11.40 120 120' fill='none' xmlns='http://www.w3.org/2000/svg'%3E %3Cpath d='M74.7024 71.6976C72.1605 70.4732 69.1006 67.3834 67.515 65.0857C55.2881 47.566 69.9936 24.0148 91.2529 26.915C113.731 29.9818 120.319 58.8257 101.46 71.5488C101.156 70.8843 101.195 69.4832 101.276 68.7471C105.837 65.039 109.446 59.6051 110.03 53.6641C110.684 47.5277 108.79 41.3918 104.789 36.6929C102.064 33.4302 98.5327 31.2267 94.541 30.0067C73.7653 23.6564 56.4914 47.8147 70.5341 65.0591C71.7933 66.6053 73.2493 67.723 74.7014 69.0015C74.8802 69.5144 74.9948 71.2449 74.7024 71.6976Z' fill='%23C1EFFE'/%3E %3C/svg%3E");
+  --nh-sp:url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='27.80 -11.40 120 120' fill='none' xmlns='http://www.w3.org/2000/svg'%3E %3Cpath d='M63.3475 16.7437C64.0015 16.6806 64.6276 16.7506 65.2118 17.075C66.2249 17.6374 71.5594 24.1612 71.7893 25.1235C71.9323 25.7211 71.8523 26.3734 71.5233 26.8969C71.0671 27.6227 70.252 28.0559 69.434 28.2268C69.2741 28.1946 69.1132 28.155 68.9596 28.0988C67.8539 27.6941 61.5788 21.9733 61.0999 20.8847C60.8005 20.2042 60.7855 19.3489 61.081 18.6656C61.4937 17.7118 62.4136 17.1081 63.3475 16.7437Z' fill='%23FEFCFA'/%3E %3Cpath d='M63.5619 18.1761C63.923 18.1574 64.248 18.1652 64.5805 18.3259C65.1315 18.5921 70.269 25.0817 70.398 25.7194C70.4378 25.9162 70.3763 26.1928 70.256 26.3522C70.0212 26.6632 69.6535 26.6992 69.295 26.7252C69.2833 26.7196 69.2717 26.7137 69.2599 26.7085C68.4615 26.3552 63.8903 22.0136 63.0884 21.1629C62.8255 20.884 62.5168 20.5501 62.3738 20.1918C62.2405 19.8582 62.2598 19.4077 62.4166 19.0859C62.682 18.5413 63.0037 18.3662 63.5619 18.1761Z' fill='%23FFD359'/%3E %3Cpath d='M88.0354 8.50776C93.1319 7.86507 91.6802 12.9916 91.4408 16.0876C91.2981 17.9359 91.794 20.8418 89.7726 21.7666C87.8704 22.3965 86.6496 21.4362 86.4748 19.5175C86.3048 17.6521 86.2275 15.7528 86.0048 13.8929C85.7691 11.9245 85.3078 8.93132 88.0354 8.50776Z' fill='%23FEFCFA'/%3E %3Cpath d='M88.474 9.67668C89.4177 9.52501 90.4618 10.2338 90.4699 11.2715C90.4825 11.9589 90.4229 12.6537 90.347 13.3379C90.0978 15.5845 89.9982 17.8741 89.6122 20.0994C89.5802 20.284 89.3913 20.4755 89.2689 20.6046C88.7147 20.6135 88.525 20.6423 88.1164 20.2743C87.7941 19.5708 87.1551 12.1702 87.1763 10.8796C87.1836 10.4347 88.0638 9.91362 88.474 9.67668Z' fill='%23FFD359'/%3E %3Cpath d='M113.345 16.7228C113.573 16.7051 113.821 16.6864 114.048 16.7094C114.97 16.8077 115.812 17.2774 116.381 18.0101C117.046 18.8818 117.199 20.319 116.544 21.2358C115.669 22.4632 114.281 23.4986 113.169 24.5204C111.951 25.6407 110.722 26.8363 109.377 27.8031C106.974 29.0458 105.259 26.1215 106.065 24.9051C107.436 22.8334 111.241 17.6149 113.345 16.7228Z' fill='%23FEFCFA'/%3E %3Cpath d='M113.599 18.16C114.966 17.9476 116.204 19.4822 115.305 20.6015C114.626 21.4482 113.609 22.2643 112.791 22.9967L109.022 26.3982C108.002 27.1681 107.05 26.1967 107.4 25.5561C108.058 24.3516 109.501 22.7158 110.373 21.6295C111.226 20.566 112.505 18.7011 113.599 18.16Z' fill='%23FFD359'/%3E %3C/svg%3E");
+  --nh-apple:url("data:image/webp;base64,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");
+}
+.stage.plain{background:#f7fbff;}
+
+/* >>> PREVIEW-ONLY - DO NOT COPY INTO A GAME <<<
+   The apple is obj_apple.webp, a CONTENT asset from MTKGA01_L01_S01. The kit ships no
+   target art, and this block is not part of any BEGIN/END paste-block.
+   The hard-coded left/top below exists only to park the hand on the apple in a static
+   tile. In a real game the hand carries NO left/top in CSS - FLNMotion.nudge.pointAt(el)
+   measures the target element and sets them, so the effect works against any object.
+   Copying these two lines would pin the hand to one spot on screen. */
+.nh-apple{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);
+  width:130px;height:130px;background:var(--nh-apple) center/contain no-repeat;
+  filter:drop-shadow(0 7px 11px rgba(0,0,0,.13));}
+#nudgeHand{position:absolute;width:86px;height:108px;pointer-events:none;z-index:5;
+  left:calc(50% - 34.2px);top:calc(55% - 15.8px);}   /* preview-only positioning */
+/* >>> END PREVIEW-ONLY. Everything below is verbatim Recipe 3 + 4. <<< */
+#nudgeHand .nh-img{display:block;width:100%;height:100%;   /* span is inline by default */
+  background:var(--nh-hand) center/contain no-repeat;
+  animation:nhTapNew 1.3s ease-in-out infinite;}
+/* the FX layers sit BEHIND the hand, as in the source artwork where the ring passes
+   behind the finger */
+#nudgeHand .nh-tapfx{position:absolute;width:94.6px;height:94.6px;
+  left:-13.08px;top:-31.48px;pointer-events:none;}
+#nudgeHand .nh-tapfx i{position:absolute;inset:0;display:block;background-repeat:no-repeat;
+  background-position:center;background-size:contain;transform-origin:50% 50%;opacity:0;}
+#nudgeHand .nh-tapfx .fx-ro{background-image:var(--nh-ro);animation:nhRippleOuter 1.3s ease-out infinite;}
+#nudgeHand .nh-tapfx .fx-ri{background-image:var(--nh-ri);animation:nhRippleInner 1.3s ease-out infinite;}
+#nudgeHand .nh-tapfx .fx-sp{background-image:var(--nh-sp);animation:nhSparkPop 1.3s ease-out infinite;}
+html.nofx #nudgeHand .nh-tapfx{display:none;}
+html.notarget .nh-apple{display:none;}
+/* crosshair marking the derived fingertip, for checking the offsets */
+#nudgeHand .pin{position:absolute;left:34.2px;top:15.8px;width:9px;height:9px;
+  margin:-4.5px 0 0 -4.5px;border-radius:50%;border:1.5px solid #ff0078;display:none;z-index:9;}
+html.pin #nudgeHand .pin{display:block;}
+
+/* contact is HELD 45%->62%; all four layers run the SAME 1.3s so they stay locked */
+@keyframes nhTapNew{
+  0%,100%{transform:translateY(0) scale(1);}
+  45%{transform:translateY(6px) scale(.93);}
+  62%{transform:translateY(6px) scale(.93);}
+}
+/* inner wavefront leads, outer trails it - one ripple rolling out from the fingertip */
+@keyframes nhRippleInner{0%,38%{opacity:0;transform:scale(.30);}47%{opacity:1;transform:scale(.74);}
+  70%{opacity:.5;transform:scale(1.10);}90%,100%{opacity:0;transform:scale(1.34);}}
+@keyframes nhRippleOuter{0%,45%{opacity:0;transform:scale(.55);}56%{opacity:.95;transform:scale(.88);}
+  78%{opacity:.4;transform:scale(1.20);}96%,100%{opacity:0;transform:scale(1.46);}}
+@keyframes nhSparkPop{0%,42%{opacity:0;transform:scale(.55);}52%{opacity:1;transform:scale(1);}
+  68%{opacity:1;transform:scale(1.06);}86%,100%{opacity:0;transform:scale(1.18);}}
+
+/* ---------- 4. confetti (paper physics) ----------
+   Three nested elements because one element cannot run three transform animations:
+     .p  path   - falls at CONSTANT speed (paper hits terminal velocity almost at once)
+     .w  wobble - swings side to side (the tumble generates alternating lift)
+     .f  face   - tumbles about two axes, so it goes edge-on and flashes its darker back
+   The two ::before/::after faces with backface-visibility give a real two-sided piece. */
+.fx-confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:60;}
+.fx-confetti .p{position:absolute;top:0;left:var(--x);
+  animation:cfFall var(--fall) linear var(--delay) both;}
+/* Sway shares the rock's PERIOD and lags it by a quarter cycle. A fluttering plate
+   slides in the direction it is tilted - the swing and the rock are one motion, not
+   two independent ones. The negative delay is what creates the quarter-cycle lag. */
+.fx-confetti .w{display:block;perspective:600px;
+  animation:cfGlide var(--rockT) linear var(--delay) infinite both;}
+.fx-confetti .f{display:block;position:relative;transform-style:preserve-3d;
+  width:calc(var(--w) * var(--z));height:calc(var(--h) * var(--z));
+  opacity:var(--dim,1);
+  animation:cfRock var(--rockT) linear var(--delay) infinite both;}
+/* the minority that actually goes end-over-end */
+.fx-confetti .f.tum{animation:cfTumble var(--rockT) linear var(--delay) infinite both;}
+.fx-confetti .f::before,.fx-confetti .f::after{content:"";position:absolute;inset:0;
+  border-radius:inherit;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+.fx-confetti .f::before{background:var(--c);}
+.fx-confetti .f::after{background:var(--c2);transform:rotateY(180deg);}
+/* Shape mix. Sizes are deliberately far apart - at 7-11px a rectangle and a square
+   are indistinguishable while tumbling, which is what made the old mix read as
+   "all squares". The aspect ratios below are distinct enough to survive the spin. */
+.fx-confetti .sq{--w:8px;  --h:8px;  border-radius:1px;}   /* square    1:1   */
+.fx-confetti .rc{--w:6px;  --h:13px; border-radius:1px;}   /* rectangle 1:2.2 */
+.fx-confetti .ln{--w:2.5px;--h:16px; border-radius:2px;}   /* line      1:6.4 */
+.fx-confetti .st{--w:11px; --h:11px;}                      /* star - needs a
+                                   few more px than the rest for its points to read */
+/* clip-path goes on the FACES, not on .f - clip-path on .f would force
+   transform-style to flat and kill the two-sided tumble */
+.fx-confetti .st::before,.fx-confetti .st::after{
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,
+                    50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+
+/* LINEAR - terminal velocity. ease-out would read as decelerating, which paper never
+   does. --drift gives each piece a gentle overall lean, as if in a faint air current. */
+@keyframes cfFall{
+  0%{transform:translate(0,-40px);opacity:0;}
+  5%{opacity:1;}
+  86%{opacity:1;}
+  100%{transform:translate(var(--drift,0px),var(--dist,820px));opacity:0;}
+}
+/* GLIDE + BOB. Real flutter is NOT sinusoidal: the plate glides at near-constant
+   attitude, then turns sharply. So this is a long glide with a quick reversal, on
+   linear timing, with the keyframe percentages doing the shaping.
+   The Y term is vertical speed modulation - the plate falls SLOWER broadside during
+   the glide (max drag) and quicker through the flip (edge-on, min drag). That
+   hesitate-then-drop is the thing your eye reads as "paper". */
+@keyframes cfGlide{
+  0%  {transform:translate(calc(var(--sway) * -1), 0);}
+  45% {transform:translate(var(--sway), calc(var(--bob) * -1));}
+  50% {transform:translate(var(--sway), 0);}
+  95% {transform:translate(calc(var(--sway) * -1), calc(var(--bob) * -1));}
+  100%{transform:translate(calc(var(--sway) * -1), 0);}
+}
+/* FLUTTER - the default, ~78% of pieces. Rocks about ONE axis, capped well short of
+   edge-on, so the face stays toward the viewer. Rotating two axes at once is what
+   hid the face before: projected area is cos(rx)*cos(ry), and a product of two
+   cosines is small most of the time. ease-in-out because a turning point is a
+   turning point - it decelerates at max tilt, like any pendulum. */
+/* FLIP. Holds attitude through the glide, then snaps over in 5% of the cycle.
+   Phase-locked to cfGlide by construction - both start at the beginning of a glide,
+   so no offset delay is needed: the flip lands exactly on the direction reversal. */
+@keyframes cfRock{
+  0%  {transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(var(--amp));}
+  45% {transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(calc(var(--amp) * 0.86));}
+  50% {transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(calc(var(--amp) * -1));}
+  95% {transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(calc(var(--amp) * -0.86));}
+  100%{transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(var(--amp));}
+}
+/* TUMBLE - the other ~22%. One half revolution, face to face. The keyframes dwell
+   near the faces and sweep through edge-on in 16% of the cycle, because a real plate
+   hangs broadside where drag is highest and flips fast through the low-drag edge. */
+@keyframes cfTumble{
+  0%  {transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(0deg);}
+  42% {transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(72deg);}
+  58% {transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(108deg);}
+  100%{transform:rotateZ(var(--tilt)) rotateY(var(--yaw)) rotateX(180deg);}
+}
+/* ---------- 5. end screen star burst ---------- */
+:root{--end-bg:url("data:image/webp;base64,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");}
+.stage.end{background:var(--end-bg,#FFD86B) center/cover no-repeat;}
+/* The white sky field runs on the END screen too - in the real game it is literally
+   the SAME .sg-sky element, shown on body.is-start and body.is-end alike, so the
+   field is identical on both screens. Only the mask hole differs.
+   NO MASK HERE ON PURPOSE: the real end-screen hole is 800 design px, which is over
+   half the stage width. At this tile's size it would cut away a third of the field
+   and make the two cards look like different effects. Masks are viewport-relative
+   and only behave correctly at true stage size - judge them in sandbox-sky.html. */
+#sbStage .sky{z-index:0;}
+/* white stars behind the gold burst, both behind the mascot */
+#sbStage canvas.fx{position:absolute;inset:0;width:100%;height:100%;z-index:1;}
+/* the burst fires from behind the mascot, so the mascot sits ABOVE the canvas */
+#sbStage .sw{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);
+  height:80%;z-index:2;pointer-events:none;}
+#sbStage .sw.missing{display:none;}
+#sbStage .swfallback{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+  width:76px;height:110px;border-radius:38px 38px 26px 26px;
+  background:#fff;border:3px solid #E9A400;z-index:2;display:none;}
+#sbStage.nosw .swfallback{display:block;}
+
+/* the OLD implementation, kept only for the Compare button: uniform size, flat
+   in-plane spin, and ease-out - which reads as decelerating. Paper never does that. */
+.fx-confetti.old i{position:absolute;top:0;width:8px;height:13px;border-radius:2px;
+  animation:oldFall 2.2s ease-out both;}
+@keyframes oldFall{
+  0%{transform:translateY(-30px) rotate(0);opacity:1;}
+  100%{transform:translateY(var(--dist,300px)) rotate(720deg);opacity:0;}
+}
+
+/* ---------- 5 + 6. answer select: the demo tiles ---------- */
+.opts{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:20px;}
+.opt-cell{position:relative;width:98px;height:98px;padding:0;border-radius:16px;
+  background:#fff;border:3px solid #C7D8EF;box-shadow:0 4px 0 #DCE6F3;
+  display:grid;place-items:center;cursor:pointer;
+  font:800 42px/1 "Segoe UI",system-ui,sans-serif;color:var(--navy);
+  transition:border-color .12s ease,box-shadow .12s ease;}
+.opt-cell:hover{background:#fff;border-color:var(--selected);box-shadow:0 4px 0 #C3D6F5;}
+.hint{position:absolute;left:10px;top:10px;font-size:12px;font-weight:600;
+  color:#fff;background:rgba(11,37,68,.78);padding:5px 11px;border-radius:999px;
+  letter-spacing:.2px;pointer-events:none;z-index:20;
+  box-shadow:0 2px 6px rgba(0,0,0,.18);}
+
+/* ===== FLN ANIMATION KIT: answer-tempo BEGIN ===== */
+/* ONE tempo for all answer feedback. Both effects derive every duration from these
+   two numbers, so they cannot drift apart - change --fx-beat and the whole pair
+   retimes together; change --fx-reward and only the correct beat moves.
+   --fx-beat is the shipped buzzShake tempo (.4s) and is the anchor: the wrong
+   answer runs exactly one beat, the correct answer runs --fx-reward of them. */
+:root{
+  --fx-beat:.4s;
+  --fx-reward:2;
+}
+/* ===== FLN ANIMATION KIT: answer-tempo END ===== */
+
+/* ===== FLN ANIMATION KIT: correct-select BEGIN ===== */
+/* NO RINGS. The confirm is the tile's own border turning green, the tile pressing
+   in and popping back, and a few sparks lifting off its top edge - nothing else.
+   Earlier passes had a ring converging inward and two halos pulsing outward; both
+   were cut. On a small tile any extra ring reads as a flicker rather than as part
+   of the tile, and the confetti (recipe 7) already covers the celebratory register.
+   Every duration derives from --ckT, so retiming the beat is one number. */
+.ck-correct{
+  --ckT:calc(var(--fx-beat) * var(--fx-reward));   /* 2 beats = 800ms */
+  overflow:visible !important;                  /* the halo leaves the box - see Gotchas */
+  z-index:6;                                    /* ...and must not slide under a neighbour */
+  /* HOUSE RULE: the green outline IS the correct-mark. No fill, no tick.
+     Put on the tile's OWN border, as recipe 9 does - a separate ring layer would
+     sit inside the existing border and leave a grey rim around it. It also means
+     the mark survives `transition:none!important`: a killed transition still lands
+     on its end value, where a killed `animation ... both` never applies one (R5). */
+  background:var(--ck-face,#fff) !important;
+  border-color:var(--correct,#00B132) !important;
+  box-shadow:0 6px 16px rgba(0,177,50,.16) !important;
+  /* 70ms, matched with .wg-wrong: the verdict colour is the most important thing
+     on screen and must land inside the ~100ms "instantaneous" window. The softness
+     comes from the motion, not from ramping the colour. */
+  transition:border-color .07s linear, box-shadow .2s ease !important;
+  /* NOT the house cubic-bezier(.34,1.5,.6,1): a timing function runs between
+     EVERY pair of keyframes, so an overshooting spring applied to a four-stop
+     pop overshoots four times and the anticipation dip never reads. The spring
+     is already shaped by the percentages below - the easing just joins them. */
+  animation:ckPop calc(var(--ckT) * .68) ease-in-out both;
+}
+.ck-correct::after{content:none !important;display:none !important;}   /* no tick */
+
+.ck-fx{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;}
+.ck-fx > i{position:absolute;inset:0;border-radius:inherit;}
+
+/* THE CROWN - sparks over the TOP ARC only. A full 360 ring competes with the
+   screen-wide confetti; a crown stays local and reads as lift. */
+.ck-crown{overflow:visible;}
+.ck-crown i{position:absolute;left:50%;top:50%;width:var(--ss);height:var(--ss);
+  margin:calc(var(--ss) / -2) 0 0 calc(var(--ss) / -2);
+  background:var(--ck-spark,#FFC93C);
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,
+                    50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+  animation:ckSpark calc(var(--ckT) * .72) cubic-bezier(.15,.7,.35,1)
+            calc(var(--ckT) * .27) both;}
+
+@keyframes ckPop{
+  0%  {transform:scale(1);}
+  11% {transform:scale(.966);}    /* ANTICIPATION - the tap presses the tile in  */
+  50% {transform:scale(1.055);}   /* peak, 272ms at the default tempo            */
+  72% {transform:scale(.992);}    /* one counter-bounce: a spring decays         */
+  100%{transform:scale(1);}
+}
+/* --x0/--y0 put each spark ON the tile's edge to begin with. Launching from the
+   centre (the obvious version) sends every spark straight across the digit the
+   child is reading - the sparks are decoration and must never cross the content. */
+@keyframes ckSpark{
+  0%  {transform:translate(var(--x0),var(--y0)) scale(.3) rotate(0deg);opacity:0;}
+  25% {opacity:1;}
+  100%{transform:translate(var(--sx),var(--sy)) scale(1) rotate(var(--sr));opacity:0;}
+}
+/* R5 - the decoration goes, the MARK stays. The border-color above already
+   survives the kill-switch; these just stop the dead layers rendering as
+   stationary green hoops parked at their `both` start state. */
+html.no-anim .ck-crown{display:none;}
+@media (prefers-reduced-motion: reduce){
+  .ck-crown{display:none;}
+}
+/* ===== FLN ANIMATION KIT: correct-select END ===== */
+
+/* ===== FLN ANIMATION KIT: wrong-select BEGIN ===== */
+/* Two states, because the fleet has two: `.wg-wrong` is a TRANSIENT correction that
+   RELEASES the tile back to tappable, `.wg-out` is elimination and stays. */
+.wg-wrong,.wg-out{
+  --wgT:var(--fx-beat);                         /* exactly one beat */
+  overflow:visible !important;
+  z-index:5;
+  background:var(--wg-face,#fff) !important;    /* no red flood */
+  border-color:var(--wrong,#F93544) !important;
+  transition:border-color .07s linear !important;   /* matched with .ck-correct */
+}
+.wg-wrong::after,.wg-out::after{content:none !important;display:none !important;}  /* no cross */
+.wg-wrong{box-shadow:0 6px 16px rgba(249,53,68,.16) !important;
+  animation:wgNo var(--wgT) ease-in-out both;}
+.wg-out{pointer-events:none;box-shadow:none !important;
+  animation:wgNoOut calc(var(--wgT) * 1.6) ease-in-out both,
+            wgFade  calc(var(--wgT) * 1.6) ease-out both;}
+
+.wg-fx{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;}
+.wg-fx > i{position:absolute;inset:0;border-radius:inherit;}
+/* one soft outward pulse, so the "no" has a source instead of just a wobble */
+.wg-pulse{border:3px solid var(--wrong,#F93544);
+  animation:wgPulse calc(var(--wgT) * .62) ease-out both;}
+.wg-out .wg-pulse{animation-duration:calc(var(--wgT) * .5);}
+
+/* Lateral buzz at the shipped tempo - buzzShake .4s, +-9 then +-6
+   (MTKGA01/style.css:662). Keeping that character matters more than being clever:
+   an earlier pass here pivoted the tile about its base like a head shaking "no",
+   which is truer to the gesture but reads slow and soft beside the rest of the
+   fleet.
+   What this DOES change is the decay. -9 -> +8 -> -5.5 -> +3 -> 0, where msShake
+   holds a flat +-7 for four beats: real oscillation loses energy, and a constant
+   amplitude reads as a machine buzzing rather than as a correction.
+   ease-in-out, because a turning point is a turning point - velocity is zero at
+   each reversal. */
+@keyframes wgNo{
+  0%  {transform:translateX(0);}
+  18% {transform:translateX(-9px);}
+  38% {transform:translateX(8px);}
+  60% {transform:translateX(-5.5px);}
+  80% {transform:translateX(3px);}
+  100%{transform:translateX(0);}
+}
+/* Same shake, then it settles SMALLER and stays there. One element owns exactly
+   ONE transform animation - a second `animation` also touching transform would
+   silently win outright and drop the shake. That is why the fade below is
+   filter + opacity only. */
+@keyframes wgNoOut{
+  0%  {transform:translateX(0)     scale(1);}
+  11% {transform:translateX(-9px)  scale(1);}
+  24% {transform:translateX(8px)   scale(1);}
+  37% {transform:translateX(-5.5px)scale(1);}
+  50% {transform:translateX(3px)   scale(1);}
+  62% {transform:translateX(0)     scale(1);}
+  100%{transform:translateX(0)     scale(.965);}
+}
+/* Recede by DESATURATING, not by dimming. The shipped opacity:.5 makes the tile's
+   own word or digit unreadable on a low-brightness tablet in a bright classroom -
+   which is exactly why a later rule already forces it back to opacity:1 !important
+   in MTKGA01 and MTKGA01_S03. This keeps the content legible and still recedes. */
+@keyframes wgFade{
+  0%,52%{filter:saturate(1);opacity:1;}
+  100%  {filter:saturate(.3);opacity:.72;}
+}
+@keyframes wgPulse{
+  0%  {transform:scale(1.02);opacity:.65;}
+  100%{transform:scale(1.16);opacity:0;}
+}
+/* THE RELEASE needs a class of its own. Dropping .wg-wrong also drops the
+   transition declared on it, so the red would snap off in one frame; .wg-rel is
+   added just before .wg-wrong comes off and outlives it by one transition, which
+   is what turns the release into a fade. It also needs no knowledge of whatever
+   neutral border colour the host activity uses. */
+.wg-rel{transition:border-color .22s ease, box-shadow .22s ease !important;}
+
+/* R5 - the red mark rides border-color, so it survives the kill-switch. What has
+   to survive in JS is the RELEASE: animationend never fires under no-anim, so the
+   class comes off on a timeout instead, or the tile stays red forever. */
+html.no-anim .wg-pulse{display:none;}
+html.no-anim .wg-out{opacity:.72;filter:saturate(.3);}
+@media (prefers-reduced-motion: reduce){
+  .wg-pulse{display:none;}
+  .wg-out{opacity:.72;filter:saturate(.3);}
+}
+/* ===== FLN ANIMATION KIT: wrong-select END ===== */
+
+/* the SHIPPED versions, kept only for the Compare buttons.
+   correct: symmetric pop, green flood, tick badge  (MTKGA01/style.css:541,659)
+   wrong:   pure translateX slab shake, red flood, opacity:.5  (style.css:662) */
+.opt-cell.old-correct{background:#CCF8D8 !important;border-color:#00B132 !important;
+  box-shadow:0 5px 10px rgba(0,177,50,.15) !important;
+  animation:oldCorrectPop .45s cubic-bezier(.3,1.4,.5,1);}
+.opt-cell.old-correct::after{content:"\2713";position:absolute;top:-14px;right:-14px;
+  width:48px;height:48px;border-radius:50%;background:#00B132;color:#fff;font-size:28px;
+  font-weight:900;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 10px rgba(0,120,45,.38);border:4px solid #fff;z-index:5;line-height:1;}
+@keyframes oldCorrectPop{0%{transform:scale(1);}45%{transform:scale(1.08);}100%{transform:scale(1);}}
+.opt-cell.old-wrong{opacity:.5;background:#FFEBEC !important;border-color:#F93544 !important;
+  animation:oldBuzzShake .4s;}
+@keyframes oldBuzzShake{0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-9px);}40%{transform:translateX(9px);}
+  60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
+
+
+/* ---------- 7. object outline: the demo scene ---------- */
+.scene{background:#cfe3f5;}
+/* No scene art - a plain warm skin/sand tone, by request. The tone is doing real
+   work as well as looking calm: --ol-idle is WHITE, so on the near-white panel this
+   card used before, the "this is tappable" outline was invisible. A warm mid tone
+   gives it contrast without any art to compete with.
+   It is also the honest hard case. The two children's arms and legs are close to
+   this colour, so the sprites nearly merge into the panel - and the outline is the
+   only thing separating them. If it reads here it reads anywhere. */
+.scene{background:linear-gradient(180deg,#EBD0B2 0%,#E3C3A1 55%,#D9B491 100%);}
+.scene .bg{display:none;}
+.scene .ob{position:absolute;bottom:var(--b);left:var(--l);height:var(--h);
+  width:auto;display:block;}
+.scene.nobg{background:linear-gradient(180deg,#bfe0f7,#e8f4d9);}
+.scene .miss{position:absolute;inset:0;display:none;place-items:center;
+  color:#5b7396;font-size:12px;text-align:center;padding:0 22px;}
+.scene.nobg .miss{display:grid;}
+
+/* ===== FLN ANIMATION KIT: object-outline BEGIN ===== */
+/* "Tap the right thing", where every target is a DIFFERENT shape.
+
+   TWO ENGINES, one set of state classes. `.is-correct` / `.is-wrong` / `.is-muted`
+   mean the same thing and are driven the same way whichever engine a target uses,
+   so a game can mix them in one scene:
+
+     .ol-alpha  the object is its OWN element with real transparency. The outline is
+                computed from its alpha by the browser - no traced path, no exported
+                ring, any silhouette, and it stays correct if the art is replaced.
+                It CAN wiggle: the outline is the element's own filter, so it travels
+                with the art.
+
+     .ol-band   the object is a REGION of a baked scene raster. It cannot be moved or
+                filtered on its own, so the outline is a pre-baked full-frame ring
+                painted through a mask, and the wrong-answer beat is a FLASH, not a
+                wiggle. Transforming it would slide the ring off the art it traces -
+                see Gotchas, this is the defect the whole approach exists to avoid.
+
+   Colour is the only thing a state changes: everything reads --ol-c. */
+.ol{
+  --ol-w:4px;                       /* stroke thickness, design px */
+  --ol-soft:5px;                    /* separation glow; set 0 on low-end devices */
+  --ol-idle:#FFFFFF;                /* "this is tappable" */
+  --ol-c:var(--ol-idle);            /* the ONE property a state changes */
+  --ol-amp:8px;                     /* wiggle travel */
+  --olT:var(--fx-beat,.4s);         /* SAME tempo token as recipes 19 + 20 */
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.ol.is-correct{--ol-c:var(--correct,#00B132);}
+.ol.is-wrong  {--ol-c:var(--wrong,#F93544);}
+.ol.is-muted  {--ol-c:rgba(255,255,255,.30);--ol-soft:0px;}
+
+/* ---------- ENGINE A - outline from the object's own alpha ---------- */
+/* FOUR axis-aligned zero-blur passes. Chained drop-shadows dilate, so four axis
+   passes give a clean square-kernel dilation of exactly --ol-w. Do NOT "improve"
+   this by adding the four diagonals: each pass also shadows the previous passes'
+   output, so diagonals compound and the stroke blooms to ~2x thickness and welds
+   shut the gaps between a character's arm and body. Measured, not guessed.
+   The fifth pass is a soft glow - it is what separates a white outline from a
+   pale background in a busy scene. Set --ol-soft:0 to drop it (4 passes). */
+.ol-alpha{
+  filter:
+    drop-shadow( var(--ol-w) 0 0 var(--ol-c))
+    drop-shadow(calc(var(--ol-w) * -1) 0 0 var(--ol-c))
+    drop-shadow(0  var(--ol-w) 0 var(--ol-c))
+    drop-shadow(0 calc(var(--ol-w) * -1) 0 var(--ol-c))
+    drop-shadow(0 0 var(--ol-soft) var(--ol-c));
+  /* 70ms at the default beat - matched with the tile marks in recipes 19/20.
+     This is a ONE-OFF transition on a single element, not a running animation:
+     the kit's standing objection to animating `filter` is about the landing sky
+     doing it forever on ~87 elements, which is a different thing. */
+  transition:filter calc(var(--olT) * .175) linear;
+  transform-origin:var(--ol-origin,50% 100%);   /* scene objects rest on something */
+}
+.ol-alpha.is-wrong  {animation:olNo  var(--olT) ease-in-out both;}
+.ol-alpha.is-correct{animation:olYes calc(var(--olT) * 1.35) ease-in-out both;}
+
+/* Same decaying lateral buzz as the tile wrong-answer (recipe 20), to the same
+   ratios, so the two mechanics speak one language. Amplitude is a variable
+   because a 60px object and a 300px character cannot share a pixel figure. */
+@keyframes olNo{
+  0%  {transform:translateX(0);}
+  18% {transform:translateX(calc(var(--ol-amp) * -1));}
+  38% {transform:translateX(calc(var(--ol-amp) * .89));}
+  60% {transform:translateX(calc(var(--ol-amp) * -.61));}
+  80% {transform:translateX(calc(var(--ol-amp) * .33));}
+  100%{transform:translateX(0);}
+}
+/* Same shape as ckPop (recipe 19): anticipation dip, peak, one counter-bounce. */
+@keyframes olYes{
+  0%  {transform:scale(1);}
+  11% {transform:scale(.97);}
+  50% {transform:scale(1.06);}
+  72% {transform:scale(.995);}
+  100%{transform:scale(1);}
+}
+
+/* ---------- ENGINE B - pre-baked ring band over a scene raster ---------- */
+/* No preview tile: the band demo was removed from preview.html. These rules are
+   kept so the block stays one pasteable unit and matches recipe 21 verbatim. */
+/* One full-frame alpha per object, painted through as a mask, so a single asset
+   serves idle, correct, wrong and muted just by changing the colour under it. */
+.ol-band{
+  position:absolute; inset:0; pointer-events:none;
+  background:var(--ol-c);
+  -webkit-mask:var(--ol-band) center/100% 100% no-repeat;
+          mask:var(--ol-band) center/100% 100% no-repeat;
+  transition:background-color calc(var(--olT) * .175) linear, opacity .2s ease;
+  filter:drop-shadow(0 0 var(--ol-soft) var(--ol-c));
+}
+/* NEVER put a transform on this. It is a full-frame mask over the scene, so any
+   scale or translate slides the ring off the art it is tracing - which is exactly
+   the "untidy outline" defect. The wrong-answer beat is a flash on OPACITY, which
+   is composited and cannot move the ring. */
+.ol-band.is-wrong  {animation:olBandNo var(--olT) linear both;}
+.ol-band.is-correct{animation:olBandYes calc(var(--olT) * 1.35) ease-out both;}
+@keyframes olBandNo{
+  0%,100%{opacity:1;} 20%,60%{opacity:.28;} 40%,80%{opacity:1;}
+}
+@keyframes olBandYes{
+  0%{opacity:.55;} 30%{opacity:1;} 100%{opacity:1;}
+}
+
+/* R5 - the outline is INFORMATION. Colour rides a custom property and a
+   transition, both of which survive the kill-switch (a killed transition still
+   lands on its end value). Only the motion is dropped. */
+html.no-anim .ol-alpha,html.no-anim .ol-band{animation:none !important;}
+@media (prefers-reduced-motion: reduce){
+  .ol-alpha,.ol-band{animation:none !important;}
+}
+/* ===== FLN ANIMATION KIT: object-outline END ===== */
+
+/* ---------- Compare: old, for the three cards that lacked one ---------- */
+
+/* 1. SKY - "old" is the state this effect actually replaced: every star, ring and
+   twinkle was PAINTED INTO startnew_bg.webp, one flat raster. So the old sky does not
+   drift, does not twinkle and cannot be tapped - there is nothing there to tap, it is
+   pixels in a background image. The glow was baked in too, hence the static shadow. */
+.sky.flat i::after{display:none;}
+.sky.flat i{animation:none;opacity:var(--o);
+  transform:translate(var(--xs),var(--ys));
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.85));}
+.sky.flat i.popped{visibility:visible;}   /* a raster cannot lose a star */
+
+/* Deviation #1, a separate axis: the shipped CSS animated filter:drop-shadow on the
+   star ITSELF, ~87 of them, every frame. drop-shadow is not composited, so each star
+   repaints continuously; the kit moves the static shadow to a pseudo-element and
+   animates opacity. The two look near-identical - the difference is repaint cost,
+   which is what the frame-time badge is for. Only meaningful while the sky drifts. */
+.sky.filterglow i::after{display:none;}
+.sky.filterglow i{animation:sgFly var(--t) linear infinite, sgGlowFilter var(--g) ease-in-out infinite alternate;
+  animation-delay:var(--d), var(--gd);}
+@keyframes sgGlowFilter{
+  from{filter:drop-shadow(0 0 0px rgba(255,255,255,0));}
+  to  {filter:drop-shadow(0 0 5px rgba(255,255,255,.95));}
+}
+.fps{position:absolute;right:10px;top:10px;font:600 11px ui-monospace,Consolas,monospace;
+  color:#fff;background:rgba(11,37,68,.78);padding:4px 9px;border-radius:999px;
+  pointer-events:none;z-index:20;}
+
+/* 7. OUTLINE - the naive version: a box round each object's bounding rect. This is
+   what you get without deriving the outline from the alpha, and it is why the
+   recipe exists - a rectangle round a parrot is not an outline of a parrot. */
+.ol-alpha.boxed{filter:none !important;animation:none !important;
+  outline:4px solid var(--ol-c);outline-offset:-1px;}
+#sfxdiag{max-width:1120px;margin:-12px 0 20px;padding:9px 13px;border-radius:9px;
+  border:1px solid var(--line);background:#fff;font:12px/1.5 ui-monospace,Consolas,monospace;
+  color:#3b5a80;display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+#sfxdiag b{font-family:"Segoe UI",system-ui,sans-serif;color:var(--navy);}
+#sfxdiag .bad{color:#c0392b;font-weight:700;}
+#sfxdiag .good{color:#1d8a4a;font-weight:700;}
+</style>
+</head>
+<body>
+
+<h1>FLN Animation Kit - Preview</h1>
+<p class="sub">The sky is installed and shipping; the other six are built and ready to
+install. Each card has a speaker to mute it. Options and gotchas in
+<a href="ANIMATIONS.md"><code>ANIMATIONS.md</code></a>.</p>
+
+<div id="sfxdiag"><b>Audio:</b> <span id="sfxdiagout">tap anything to start</span></div>
+
+<div class="grid">
+
+  <div class="card" id="sky-drift">
+    <div class="hd"><b>1. Start screen stars</b><button class="spk" data-act="mute" aria-label="Sound on" title="Mute this card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.4 8.6a4.8 4.8 0 0 1 0 6.8"/><path class="wave" d="M18.4 5.6a9 9 0 0 1 0 12.8"/><path class="slash" d="M4.5 19.5 19.5 4.5"/></svg></button></div>
+    <div class="stage"><div class="sky" id="sky"></div><div class="fps" id="fps"></div>
+      <div class="sg-card" id="sgCard">tap a star →</div></div>
+    <div class="ft"><button data-act="rebuildSky">Rebuild</button>
+      <button data-act="skyOld">Compare: old</button>
+      <button data-act="skyGlow">Glow: opacity</button>
+      <span id="skyHint">Click any drifting star</span></div>
+  </div>
+
+  <div class="card" id="nudge-ripple">
+    <div class="hd"><b>2. Nudge hand tap hint</b></div>
+    <div class="stage plain">
+      <div class="nh-apple"></div>
+      <div id="nudgeHand">
+        <span class="nh-tapfx"><i class="fx-ro"></i><i class="fx-ri"></i><i class="fx-sp"></i></span>
+        <span class="nh-img"></span>
+        <span class="pin"></span>
+      </div>
+    </div>
+    <div class="ft"><button data-act="fxToggle">Ripple: on</button>
+      <button data-act="pinToggle">Fingertip</button>
+      <button data-act="targetToggle">Target</button>
+      <button data-act="nudgeOld">Compare: old</button></div>
+  </div>
+
+  <div class="card" id="confetti">
+    <div class="hd"><b>3. Correct answer confetti</b><button class="spk" data-act="mute" aria-label="Sound on" title="Mute this card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.4 8.6a4.8 4.8 0 0 1 0 6.8"/><path class="wave" d="M18.4 5.6a9 9 0 0 1 0 12.8"/><path class="slash" d="M4.5 19.5 19.5 4.5"/></svg></button></div>
+    <div class="stage plain" id="confStage"></div>
+    <div class="ft"><button data-act="confetti">Replay</button>
+      <button data-act="confettiOld">Compare: old</button></div>
+  </div>
+
+  <div class="card" id="star-burst">
+    <div class="hd"><b>4. Celebration star burst</b><button class="spk" data-act="mute" aria-label="Sound on" title="Mute this card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.4 8.6a4.8 4.8 0 0 1 0 6.8"/><path class="wave" d="M18.4 5.6a9 9 0 0 1 0 12.8"/><path class="slash" d="M4.5 19.5 19.5 4.5"/></svg></button></div>
+    <div class="stage end" id="sbStage">
+      <div class="sky" id="endSky"></div>
+      <img class="sw" id="swifty" alt=""
+           src="../HI01H05_L02_S01/assets/UI/sw_lg_celebrating.webp">
+      <div class="swfallback"></div>
+    </div>
+    <div class="ft"><button data-act="starburst">Replay</button>
+      <button data-act="starburstOld">Compare: old</button></div>
+  </div>
+
+  <div class="card" id="correct-select">
+    <div class="hd"><b>5. Correct answer select</b><button class="spk" data-act="mute" aria-label="Sound on" title="Mute this card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.4 8.6a4.8 4.8 0 0 1 0 6.8"/><path class="wave" d="M18.4 5.6a9 9 0 0 1 0 12.8"/><path class="slash" d="M4.5 19.5 19.5 4.5"/></svg></button></div>
+    <div class="stage plain" id="ckStage">
+      <div class="opts">
+        <button class="opt-cell" data-act="pick" data-fx="ck">2</button>
+        <button class="opt-cell" data-act="pick" data-fx="ck">5</button>
+        <button class="opt-cell" data-act="pick" data-fx="ck">9</button>
+      </div>
+      <div class="hint">tap a tile</div>
+    </div>
+    <div class="ft"><button data-act="ckReplay">Replay</button>
+      <button data-act="ckCrown">Crown: on</button>
+      <button data-act="ckOld">Compare: old</button></div>
+  </div>
+
+  <div class="card" id="wrong-select">
+    <div class="hd"><b>6. Wrong answer select</b><button class="spk" data-act="mute" aria-label="Sound on" title="Mute this card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.4 8.6a4.8 4.8 0 0 1 0 6.8"/><path class="wave" d="M18.4 5.6a9 9 0 0 1 0 12.8"/><path class="slash" d="M4.5 19.5 19.5 4.5"/></svg></button></div>
+    <div class="stage plain" id="wgStage">
+      <div class="opts">
+        <button class="opt-cell" data-act="pick" data-fx="wg">3</button>
+        <button class="opt-cell" data-act="pick" data-fx="wg">7</button>
+        <button class="opt-cell" data-act="pick" data-fx="wg">4</button>
+      </div>
+      <div class="hint">tap a tile - it releases and is tappable again</div>
+    </div>
+    <div class="ft"><button data-act="wgReplay">Replay</button>
+      <button data-act="wgKill">Eliminate</button>
+      <button data-act="wgOld">Compare: old</button></div>
+  </div>
+
+  <div class="card" id="object-outline">
+    <div class="hd"><b>7. Tap the object - outline, any shape</b><button class="spk" data-act="mute" aria-label="Sound on" title="Mute this card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.4 8.6a4.8 4.8 0 0 1 0 6.8"/><path class="wave" d="M18.4 5.6a9 9 0 0 1 0 12.8"/><path class="slash" d="M4.5 19.5 19.5 4.5"/></svg></button></div>
+    <div class="stage scene" id="olStage">
+      <img class="ob ol ol-alpha" data-act="olpick" data-r="0" alt="Kajal"
+           style="--l:26%;--b:10%;--h:56%;--ol-amp:9px"  src="../HIKGH01_L02_S03_कहानी_तोता/HIKGH01_L02_S03_कहानी_तोता/assets/Images/char_kajal.webp">
+      <img class="ob ol ol-alpha" data-act="olpick" data-r="1" alt="tota"
+           style="--l:47%;--b:11%;--h:29%;--ol-amp:7px" src="../HIKGH01_L02_S03_कहानी_तोता/HIKGH01_L02_S03_कहानी_तोता/assets/Images/char_tota_landing.webp">
+      <img class="ob ol ol-alpha" data-act="olpick" data-r="0" alt="Madhav"
+           style="--l:65%;--b:10%;--h:56%;--ol-amp:9px" src="../HIKGH01_L02_S03_कहानी_तोता/HIKGH01_L02_S03_कहानी_तोता/assets/Images/char_madhav.webp">
+      <div class="hint">tap the parrot</div>
+    </div>
+    <div class="ft"><button data-act="olReset">Reset</button>
+      <button data-act="olMute">Mute the rest</button>
+      <button data-act="olThick">Stroke: 4px</button>
+      <button data-act="olOld">Compare: old</button></div>
+  </div>
+
+
+</div>
+
+<script>
+"use strict";
+
+/* ===== FLN ANIMATION KIT: sfx BEGIN ===== */
+/* Soft, warm, roomy. Rewritten after the first pass was rejected as sounding
+   machine-made, which it did. Four things caused that, and none of them were the
+   tune:
+     1. BONE DRY. Nothing real is heard without a room around it. Everything now
+        goes through a short generated reverb, and that single change does more for
+        "not a machine" than any amount of partial-tuning.
+     2. HARD ATTACKS. A 6ms attack is a click, and a click is a computer. The
+        feedback cues now open over 18-30ms - struck felt, not struck glass.
+     3. TOO BELL-HEAVY. Bright inharmonic partials read as "digital chime". The
+        voice is now mostly fundamental with a quiet, slightly sharp second mode,
+        which is what a music box or a soft mallet actually gives you.
+     4. ONE OSCILLATOR PER PARTIAL. A single sine is sterile. Each mode is two
+        oscillators a few cents apart, so they beat slowly against each other the
+        way any real resonator does.
+   No square or sawtooth anywhere, nothing sustains, and every hit is randomised a
+   little so no two are identical.
+
+   ONE REAL RECORDING EXISTS in the fleet - sfx_celebrate.ogg, the end-screen cheer.
+   Any cue with a file registered in S.files uses it and skips synthesis entirely.
+
+   All cues are trimmed to land at the SAME peak level, so nothing jumps out. */
+(function(){ "use strict";
+  var M = window.FLNMotion = window.FLNMotion || {};
+  var ctx = null, bus = null, wet = null, noiseBuf = null;
+  var unlocked = false, an = null, fired = 0, sampleAt = 0;
+
+  var S = M.sfx = {
+    enabled: true,
+    volume: 1.5,
+    files: {},         /* cue name -> url. This is the ONLY thing that makes sound. */
+    /* ONE knob for how loud everything is. S.vol holds the BALANCE between cues
+       and should not be touched to make things quieter - change this instead, and
+       the mix between them stays intact. 1 = the files at their own level. */
+    master: 0.75,
+    /* The synthesised voices below are kept as reference, but they are OFF. Three
+       rounds of them were rejected as machine-like and that judgement was right -
+       Web Audio synthesis has a ceiling for warm, human, kid-friendly cues. A cue
+       with no recording registered is SILENT, because silence beats a sound nobody
+       wants. Turn this on only to hear what the fallback would be. */
+    allowSynth: false
+  };
+
+  /* A generated room. Exponentially decaying noise is a crude impulse response and
+     completely convincing at this length - it only has to suggest that the sound
+     happened somewhere. */
+  function impulse(c, secs, decay){
+    var n = Math.floor(c.sampleRate * secs);
+    var b = c.createBuffer(2, n, c.sampleRate);
+    for(var ch = 0; ch < 2; ch++){
+      var d = b.getChannelData(ch);
+      for(var i = 0; i < n; i++)
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay);
+    }
+    return b;
+  }
+
+  function ac(){
+    if(!S.enabled) return null;
+    try{
+      /* `.length` only exists on an OfflineAudioContext - never resume one. */
+      if(ctx){ if(ctx.state === "suspended" && !ctx.length) ctx.resume(); return ctx; }
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      ctx = new AC();
+      build(ctx);
+      if(ctx.state === "suspended") ctx.resume();
+      return ctx;
+    }catch(_){ return null; }
+  }
+
+  function build(c){
+    bus = c.createGain(); bus.gain.value = S.volume;
+
+    var lp = c.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 5200; lp.Q.value = 0.4;
+
+    var rev = c.createConvolver(); rev.buffer = impulse(c, 1.1, 2.6);
+    wet = c.createGain(); wet.gain.value = 0.34;      /* send level */
+    var revOut = c.createGain(); revOut.gain.value = 1;
+
+    var lim = c.createDynamicsCompressor();
+    lim.threshold.value = -8; lim.knee.value = 8; lim.ratio.value = 12;
+    lim.attack.value = 0.004; lim.release.value = 0.2;
+
+    an = c.createAnalyser(); an.fftSize = 2048;
+
+    bus.connect(lp);
+    lp.connect(lim);                 /* dry */
+    wet.connect(rev); rev.connect(revOut); revOut.connect(lim);   /* wet */
+    lim.connect(an); an.connect(c.destination);
+  }
+
+  function noise(c){
+    if(noiseBuf) return noiseBuf;
+    var n = Math.floor(c.sampleRate * 0.4);
+    noiseBuf = c.createBuffer(1, n, c.sampleRate);
+    var d = noiseBuf.getChannelData(0);
+    for(var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    return noiseBuf;
+  }
+
+  function rnd(a, b){ return a + Math.random() * (b - a); }
+
+  /* Per-cue loudness trim. The cues are written for their own internal balance -
+     how loud the second note is against the first - and this makes every cue as a
+     WHOLE land at the same peak, so none of them jumps out against the others.
+     Calibrated by rendering each one and measuring, not by ear or by guess. */
+  var TRIM = { correct:1.006, wrong:1.171, pick:3.570, sprinkle:1.696,
+               celebrate:0.910, burst:1.811, tick:9.155 };
+  var trim = 1;
+
+  /* One soft note. `atk` is what separates warm from clicky. Modes are quiet and
+     only slightly inharmonic - enough to not be a pure tone, not so much that it
+     rings like a bell. */
+  var MODE = [[1, 1, 1], [2.02, 0.16, 0.62], [3.01, 0.05, 0.34]];
+
+  function note(c, f, at, gain, dur, atk){
+    atk = atk || 0.02; gain *= trim;
+    f *= rnd(0.9975, 1.0025);
+    for(var i = 0; i < MODE.length; i++){
+      var m = MODE[i];
+      for(var k = 0; k < 2; k++){                  /* two, a few cents apart */
+        var o = c.createOscillator();
+        o.type = "sine";
+        o.frequency.value = f * m[0] * (k ? 1.0018 : 0.9982);
+        var g = c.createGain();
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(gain * m[1] * 0.5, at + atk);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dur * m[2]);
+        o.connect(g); g.connect(bus); g.connect(wet);
+        o.start(at); o.stop(at + dur * m[2] + 0.02);
+      }
+    }
+  }
+
+  /* Air, not pitch - for things coming apart. */
+  function puff(c, at, gain, dur, f0, f1){
+    gain *= trim;
+    var src = c.createBufferSource(); src.buffer = noise(c);
+    var bp = c.createBiquadFilter();
+    bp.type = "bandpass"; bp.Q.value = 0.7;
+    bp.frequency.setValueAtTime(f0, at);
+    bp.frequency.exponentialRampToValueAtTime(f1, at + dur);
+    var g = c.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    src.connect(bp); bp.connect(g); g.connect(bus); g.connect(wet);
+    src.start(at); src.stop(at + dur + 0.02);
+  }
+
+  /* D major pentatonic - a run of these can never sound wrong together. */
+  var PENT = [293.66, 329.63, 369.99, 440.00, 493.88,
+              587.33, 659.25, 739.99, 880.00, 987.77];
+  function pent(lo, hi){ return PENT[Math.floor(rnd(lo, hi))]; }
+
+  function play(name, fn){
+    try{
+      /* NOTHING before the first gesture - recordings included. This gate used to
+         sit after the S.files check, so a cue with a real file attached skipped it
+         entirely: the star-burst tile auto-demos on load, and that fired the
+         end-screen cheer the instant the page opened. The synth cues were gated and
+         silent, which is exactly why it took a real recording to expose the hole. */
+      if(!unlocked) return;
+      if(S.files[name] && sample(S.files[name], S.vol[name], S.rate[name])){ fired++; return; }
+      if(!S.allowSynth) return;               /* no recording -> no sound */
+      var c = ac(); if(!c) return;
+      if(!c.length && c.state === "suspended") c.resume();
+      fired++;
+      trim = TRIM[name] || 1;
+      fn(c, c.currentTime + 0.005);
+    }catch(_){}
+  }
+
+  /* Real recordings, played through <audio>: decodeAudioData needs fetch(), and
+     fetch from a file:// page is CORS-blocked to origin "null" - the same trap
+     that stops a CSS mask loading from a path. <audio src> is not affected. */
+  /* Per-file playback volume. The recordings come from different sources and match
+     on PEAK but not on perceived loudness, so these were solved from each file's
+     RMS - measured, not guessed. */
+  S.vol = {};
+  /* Playback rate per cue. `preservesPitch` is switched OFF so this genuinely
+     transposes the recording rather than time-stretching it - which is the point:
+     it lets one recorded instrument cover two registers, so the correct and wrong
+     cues can be the SAME sound rising and falling instead of two unrelated ones. */
+  S.rate = {};
+  var els = {};
+  function sample(url, vol, rate){
+    try{
+      var a = els[url];
+      if(!a){ a = els[url] = new Audio(url); a.preload = "auto"; }
+      a.volume = Math.max(0, Math.min(1, (vol == null ? 0.85 : vol) * S.master));
+      if(rate && rate !== 1){
+        try{ a.preservesPitch = false; a.mozPreservesPitch = false;
+             a.webkitPreservesPitch = false; }catch(_){}
+        a.playbackRate = rate;
+      }
+      a.currentTime = 0;
+      var pr = a.play(); if(pr && pr.catch) pr.catch(function(){});
+      sampleAt = Date.now();
+      return true;
+    }catch(_){ return false; }
+  }
+  S.sample = sample;
+
+  /* --- the cues. Gains are trimmed so every one peaks at the same level. ---- */
+
+  /* CORRECT - two soft notes rising a fourth, opening slowly. Warm, not bright:
+     this fires many times a session and anything brighter becomes nagging. */
+  S.correct = function(){
+    play("correct", function(c, t){
+      note(c, 440.00, t,         0.115, 1.05, 0.022);
+      note(c, 587.33, t + 0.105, 0.105, 1.30, 0.026);
+    });
+  };
+
+  /* WRONG - two notes stepping gently DOWN, low and soft, opening slower still.
+     No knock, no buzz, nothing percussive: it has to read as "not that one", and
+     a child hears it far more often than the correct cue. */
+  S.wrong = function(){
+    play("wrong", function(c, t){
+      note(c, 349.23, t,         0.100, 0.80, 0.030);
+      note(c, 277.18, t + 0.115, 0.095, 1.05, 0.034);
+    });
+  };
+
+  /* PICK - one quiet note, an object chosen but not yet judged. */
+  S.pick = function(){
+    play("pick", function(c, t){ note(c, pent(2, 6), t, 0.085, 0.55, 0.020); });
+  };
+
+  /* SPRINKLE - confetti. Distant, sparse, high. The confetti is already carrying
+     the celebration; this is only meant to give it some air. */
+  S.sprinkle = function(){
+    play("sprinkle", function(c, t){
+      for(var i = 0; i < 5; i++)
+        note(c, pent(6, 10), t + rnd(0, 0.55), rnd(0.030, 0.050), rnd(0.7, 1.1), 0.018);
+    });
+  };
+
+  /* CELEBRATE - the end screen. Uses the shipped recording when one is registered
+     (S.files.celebrate); the synth below is only a stand-in. */
+  S.celebrate = function(){
+    play("celebrate", function(c, t){
+      var n = [440.00, 587.33, 659.25, 880.00], i;
+      for(i = 0; i < n.length; i++)
+        note(c, n[i], t + i * 0.115, 0.100 - i * 0.008, 1.2 + i * 0.15, 0.022);
+      note(c, 293.66, t, 0.070, 1.6, 0.030);
+    });
+  };
+
+  /* BURST - a drifting star popped. A short downward breath of air for the pop,
+     then a few tiny sparks. Was a single sustained bell, which read as a chime
+     being played rather than as something coming apart. */
+  S.burst = function(){
+    play("burst", function(c, t){
+      puff(c, t, 0.090, 0.15, 2400, 650);
+      for(var i = 0; i < 4; i++)
+        note(c, pent(6, 10), t + 0.015 + Math.random() * 0.16,
+             rnd(0.030, 0.048), rnd(0.30, 0.50), 0.012);
+    });
+  };
+  S.pling = S.burst;
+
+  /* TICK - a fingertip landing. The quietest thing here on purpose. */
+  S.tick = function(){
+    play("tick", function(c, t){ note(c, 220, t, 0.045, 0.22, 0.014); });
+  };
+
+  S.resume = function(){
+    unlocked = true;
+    var c = ac();
+    if(c && !c.length && c.state === "suspended") c.resume();
+  };
+
+  /* What is actually going on, for when nothing can be heard. Reports the level
+     leaving the graph, which separates "never ran" from "ran but suspended" from
+     "playing fine, the problem is downstream". */
+  S.diagnose = function(){
+    var peak = 0;
+    if(an){
+      var d = new Float32Array(an.fftSize);
+      an.getFloatTimeDomainData(d);
+      for(var i = 0; i < d.length; i++){ var v = Math.abs(d[i]); if(v > peak) peak = v; }
+    }
+    return {
+      trims: TRIM,
+      enabled: S.enabled, gestureSeen: unlocked,
+      context: ctx ? ctx.state : "not created",
+      sampleRate: ctx ? ctx.sampleRate : 0,
+      clockRunning: ctx ? ctx.currentTime > 0 : false,
+      cuesFired: fired, outputPeak: +peak.toFixed(4), volume: S.volume,
+      /* A sample plays through an <audio> element, which is outside the graph the
+         analyser sits in - so outputPeak reads 0 for it. Without this flag the
+         readout would call a perfectly good recording "silent". */
+      samplePlaying: Date.now() - sampleAt < 1500
+    };
+  };
+
+  /* Render one cue offline, to measure it or export a file someone can listen to. */
+  S.render = function(name, seconds, cb){
+    try{
+      var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if(!OAC || typeof S[name] !== "function"){ cb(null); return; }
+      var sr = 44100, oc = new OAC(2, Math.ceil(sr * seconds), sr);
+      var lc = ctx, lb = bus, lw = wet, ln = noiseBuf, la = an, lu = unlocked, lf = S.files;
+      ctx = oc; noiseBuf = null; unlocked = true; S.files = {};
+      build(oc);
+      S[name]();
+      oc.startRendering().then(function(buf){
+        ctx = lc; bus = lb; wet = lw; noiseBuf = ln; an = la; unlocked = lu; S.files = lf;
+        cb(Array.prototype.slice.call(buf.getChannelData(0)));
+      });
+    }catch(e){ cb(null); }
+  };
+})();
+/* ===== FLN ANIMATION KIT: sfx END ===== */
+
+/* Browsers will not start an AudioContext until the user has interacted, so it is
+   built on the first pointerdown rather than at load. Nothing before that gesture
+   makes a sound - including the tiles that auto-demo on load. */
+/* REAL RECORDINGS. Every cue below is an actual recorded sound, not synthesis -
+   three rounds of synthesised cues were rejected as machine-like and they were.
+   sfx/ holds CC0 files from Kenney (kenney.nl), chosen by measuring the candidates
+   rather than by their names: `correct` rises 11.9 semitones, `wrong` falls 6.8 and
+   opens softly so it reads as "hmm?" instead of a buzzer, and `success` rises 3.2.
+   That last check mattered - the brighter steel-drum jingle FALLS 7.8 semitones and
+   is a LOSE stinger, which is exactly the sort of thing that ships by accident.
+   celebrate stays the fleet's own sfx_celebrate.ogg, which children already know. */
+FLNMotion.sfx.files = {
+  /* ONLY sounds that have been accepted. Anything not listed here is SILENT - the
+     Kenney interface-pack picks for confetti, star-pop and select were rejected as
+     machine-like, and they were: that pack is synthesised UI blips, which is the
+     wrong material for this no matter which file you choose from it.
+     TO ADD ONE: drop a real recording in sfx/ and add a line here. Nothing else. */
+  correct:   "sfx/correct.ogg",
+  wrong:     "sfx/wrong.ogg",
+  burst:     "sfx/burst.ogg",      /* ONLY the landing-screen stars popping */
+  /* the confetti is the correct-answer celebration, so it shares the end screen's
+     cheer rather than the star-pop sound */
+  sprinkle:  "../MTKGA02_L01_S01/assets/Audio/sfx_celebrate.ogg",
+  /* Of the SIX different sfx_celebrate.ogg in the fleet this one measures the
+     fullest: 1.5s (the others are ~1.1s), the highest tonality of the set, a
+     soft 125ms attack and a 36-semitone rise. Worth knowing: HIKGH01 and
+     MTKGA01 ship a version that peaks at 0.08 - effectively silent. */
+  celebrate: "../MTKGA02_L01_S01/assets/Audio/sfx_celebrate.ogg"
+  /* pick, tick           - optional                                        */
+};
+FLNMotion.sfx.vol = { correct: 0.85, wrong: 0.85, burst: 0.8, sprinkle: 0.85, celebrate: 0.85 };
+FLNMotion.sfx.rate = {};   /* supplied recordings play at their own pitch */
+
+document.addEventListener("pointerdown", function once(){
+  document.removeEventListener("pointerdown", once, true);
+  FLNMotion.sfx.resume();
+}, true);
+
+/* Every cue goes through here so it can be dropped if its card is muted. The
+   effects themselves never reference audio directly.
+   Card 2, the nudge hand, deliberately calls nothing: it is a hint that loops for
+   as long as a child hesitates, and a tick on every lap would be the most
+   irritating sound in the activity. Its header has no speaker for that reason -
+   a mute button on something that never makes a noise is a dead control. */
+var booting = true;      /* cleared once the boot demos have run */
+
+function cue(el, name){
+  /* Sound is for things the USER did. The tiles that demo themselves on load must
+     stay silent - relying on the audio gesture-gate for that worked only by
+     accident, and broke the moment a cue had a real recording attached, since a
+     recording does not need the audio context at all. */
+  if(booting) return;
+  var c = el && el.closest ? el.closest(".card") : null;
+  if(c && c.getAttribute("data-mute") === "1") return;
+  var f = FLNMotion.sfx[name];
+  if(typeof f === "function") f();
+}
+
+var HUES = ["#FCB717","#3B7DD8","#21A74A","#E5484D","#7048D6","#F1781D"];
+var KIND = {s1:"k-star", s2:"k-star", s3:"k-spark", s4:"k-dot", s5:"k-dot"};
+var _actx = null;
+
+function actx(){
+  try{
+    var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null;
+    _actx = _actx || new AC();
+    if(_actx.state === "suspended") _actx.resume();
+    return _actx;
+  }catch(e){ return null; }
+}
+
+/* Same lane algorithm as the kit, but in px scaled to the tile instead of vmax. */
+function buildSky(el, lanes){
+  el.textContent = "";
+  var shapes = ["s1","s2","s3","s4","s5"];
+  var layers = [{rot:0,scale:1},{rot:6.2,scale:0.62}];
+  var r0 = 40, r1 = 260;
+  layers.forEach(function(L, li){
+    for(var i = 0; i < lanes; i++){
+      var a = ((360/lanes)*i + L.rot) * Math.PI/180;
+      var cos = Math.cos(a), sin = Math.sin(a);
+      var size = (5 + Math.random()*10) * L.scale;
+      var dur  = 8 + Math.random()*7;
+      var rs   = r0 + (r1 - r0) * (0.10 + Math.random()*0.78);
+      var n = document.createElement("i");
+      n.className = shapes[(i+li) % shapes.length];
+      n.style.cssText =
+        "--s:" + size.toFixed(1) + "px;" +
+        "--x1:" + (r0*cos).toFixed(1) + "px;--y1:" + (r0*sin).toFixed(1) + "px;" +
+        "--x2:" + (r1*cos).toFixed(1) + "px;--y2:" + (r1*sin).toFixed(1) + "px;" +
+        /* where this star sits when the sky is the flat raster - same ray, parked */
+        "--xs:" + (rs*cos).toFixed(1) + "px;--ys:" + (rs*sin).toFixed(1) + "px;" +
+        "--t:" + dur.toFixed(1) + "s;--d:-" + (Math.random()*dur).toFixed(1) + "s;" +
+        "--g:" + (2.4 + Math.random()*2).toFixed(1) + "s;--gd:-" + (Math.random()*3).toFixed(1) + "s;" +
+        "--o:" + (0.65 + Math.random()*0.3).toFixed(2) + ";";
+      el.appendChild(n);
+    }
+  });
+}
+
+/* sine thud + square after-crackles */
+function boom(el){
+  /* was: a fixed two-oscillator blip plus crackles. Replaced by the kit's struck-bar
+     voice, which picks a different pentatonic note each time - popping a handful of
+     stars now plays a little tune instead of the same beep nine times over. */
+  cue(el, "burst");
+}
+
+function pop(el, r){
+  el.classList.add("popped");
+  /* respawn on the next FLIGHT lap - the glow cycle is shorter, so filter by name */
+  el.addEventListener("animationiteration", function back(e){
+    if(e.animationName !== "sgFly") return;
+    el.classList.remove("popped");
+    el.removeEventListener("animationiteration", back);
+  });
+  var kind = "k-dot", cls = el.classList;
+  for(var ci = 0; ci < cls.length; ci++){ if(KIND[cls[ci]]) kind = KIND[cls[ci]]; }
+  var bs = Math.max(11, r.width);
+  var b = document.createElement("div");
+  b.className = "sg-burst " + kind;
+  b.style.left = (r.left + r.width/2) + "px";
+  b.style.top  = (r.top + r.height/2) + "px";
+  b.style.setProperty("--bs", bs + "px");
+  b.appendChild(document.createElement("div")).className = "fl";
+  var rings = [{n:9,rad:3.1,size:.58,dur:.80},{n:7,rad:1.8,size:.78,dur:.62}], k = 0;
+  for(var g = 0; g < rings.length; g++){
+    var R = rings[g], off = Math.random()*Math.PI*2;
+    for(var i = 0; i < R.n; i++, k++){
+      var a = off + i/R.n*Math.PI*2;
+      var dist = bs*R.rad*(0.78 + Math.random()*0.44);
+      var p = document.createElement("i");
+      p.style.cssText =
+        "--ps:" + (bs*R.size*(0.8+Math.random()*0.5)).toFixed(1) + "px;" +
+        "--dx:" + (Math.cos(a)*dist).toFixed(1) + "px;" +
+        "--dy:" + (Math.sin(a)*dist).toFixed(1) + "px;" +
+        "--gy:" + (dist*0.42).toFixed(1) + "px;" +
+        "--sd:" + (R.dur + Math.random()*0.22).toFixed(2) + "s;" +
+        "--sdl:" + (Math.random()*0.06).toFixed(3) + "s;" +
+        "color:" + HUES[k % HUES.length];
+      b.appendChild(p);
+    }
+  }
+  document.body.appendChild(b);
+  boom(el);
+  setTimeout(function(){ b.remove(); }, 1200);
+}
+
+/* Capture-phase rect hit-test - the sky layer never intercepts the tap itself.
+   Delegated across EVERY .sky on the page, so the landing field and the end-screen
+   field both burst from one handler. */
+document.addEventListener("pointerdown", function(e){
+  if(e.target.closest("button,[data-act]")) return;   /* card controls AND tap targets */
+  var skies = document.querySelectorAll(".sky");
+  for(var s = 0; s < skies.length; s++){
+    if(skies[s].classList.contains("flat")) continue;   /* it is a picture, not stars */
+    var els = skies[s].querySelectorAll("i:not(.popped)");
+    for(var i = 0; i < els.length; i++){
+      var el = els[i], r = el.getBoundingClientRect();
+      if(r.width < 2) continue;
+      var pad = Math.max(12, r.width*0.7);    /* small targets need a forgiving hit box */
+      if(e.clientX < r.left - pad || e.clientX > r.right + pad ||
+         e.clientY < r.top  - pad || e.clientY > r.bottom + pad) continue;
+      if(parseFloat(getComputedStyle(el).opacity) < 0.08) continue;
+      e.stopPropagation(); e.preventDefault();
+      pop(el, r);
+      return;
+    }
+  }
+}, true);
+
+/* ---------- confetti ---------- */
+/* VIBGYOR. Front/back pairs: the back is the SAME hue darkened, which is what paper
+   lit from one side looks like as it turns over. A contrasting back would read as two
+   different pieces flickering rather than one piece tumbling. */
+var CONF = [
+  ["#8B2FC9","#5E1C8C"],   /* violet */
+  ["#3F51B5","#27358A"],   /* indigo */
+  ["#1E88E5","#135FA6"],   /* blue   */
+  ["#22B24C","#157A34"],   /* green  */
+  ["#FFD21E","#D9A800"],   /* yellow */
+  ["#FF8A1E","#C75F00"],   /* orange */
+  ["#E5322D","#A81F1B"]    /* red    */
+];
+/* weighted: star 40%, rectangle 20%, line 20%, square 20% */
+var SHAPES = ["st","st","st","st","rc","rc","ln","ln","sq","sq"];
+function rnd(a, b){ return a + Math.random() * (b - a); }
+
+function confettiNew(host, n){
+  cue(host, "sprinkle");
+  host.querySelectorAll(".fx-confetti").forEach(function(x){ x.remove(); });
+  var dist = host.clientHeight + 60, maxLife = 0;
+  var wrap = document.createElement("div");
+  wrap.className = "fx-confetti";
+  for(var i = 0; i < n; i++){
+    var z     = rnd(0.75, 1.15);           /* depth: nearer pieces are bigger */
+    var fall  = rnd(1.1, 1.8) / z;         /* ...and fall faster (parallax)   */
+    var delay = rnd(0, 0.35);
+    if(fall + delay > maxLife) maxLife = fall + delay;
+    var pair = CONF[i % CONF.length];
+    /* Two regimes, and a real plate moves DIFFERENTLY in each:
+       flutter = zigzags a lot, almost no net sideways drift;
+       tumble  = autorotation produces a steady lateral force, so it barely zigzags
+                 but drifts consistently to one side. */
+    var flutter = Math.random() > 0.22;
+    var rockT   = flutter ? rnd(0.6, 1.2) : rnd(0.75, 1.5);
+    var sway    = flutter ? rnd(10, 34)   : rnd(2, 8);
+    var drift   = flutter ? rnd(-12, 12)  : rnd(-45, 45);
+    var bob     = flutter ? rnd(3, 7)     : rnd(2, 4);
+
+    /* every custom property is set once here and INHERITS down to .w and .f */
+    var p = document.createElement("i"); p.className = "p";
+    p.style.cssText =
+      "--x:"     + rnd(-2, 98).toFixed(1) + "%;" +
+      "--dist:"  + dist + "px;" +
+      "--fall:"  + fall.toFixed(2) + "s;" +
+      "--delay:" + delay.toFixed(2) + "s;" +
+      "--drift:" + drift.toFixed(0) + "px;" +
+      "--sway:"  + sway.toFixed(0) + "px;" +
+      "--bob:"   + bob.toFixed(1) + "px;" +
+      "--rockT:" + rockT.toFixed(2) + "s;" +
+      /* capped short of 90deg: even at max tilt the face still reads */
+      "--amp:"   + Math.round(rnd(28, 52)) + "deg;" +
+      "--yaw:"   + Math.round(rnd(-30, 30)) + "deg;" +
+      "--tilt:"  + Math.round(rnd(-25, 25)) + "deg;" +
+      "--z:"     + z.toFixed(2) + ";" +
+      "--dim:"   + (0.72 + (z - 0.75) / 0.4 * 0.28).toFixed(2) + ";" +
+      "--c:"     + pair[0] + ";--c2:" + pair[1] + ";";
+
+    var w = document.createElement("i"); w.className = "w";
+    var f = document.createElement("i");
+    f.className = "f " + SHAPES[Math.floor(Math.random() * SHAPES.length)] +
+                  (flutter ? "" : " tum");
+    w.appendChild(f); p.appendChild(w); wrap.appendChild(p);
+  }
+  host.appendChild(wrap);
+  setTimeout(function(){ wrap.remove(); }, (maxLife + 0.3) * 1000);
+}
+
+function confettiOld(host, n){
+  cue(host, "sprinkle");        /* the compare replays the effect, so it sounds too */
+  host.querySelectorAll(".fx-confetti").forEach(function(x){ x.remove(); });
+  var colors = ["#FCB717","#386AF6","#E55B49","#21A74A","#7048D6","#FF7AC6","#2BC4D8"];
+  var wrap = document.createElement("div");
+  wrap.className = "fx-confetti old";
+  wrap.style.setProperty("--dist", (host.clientHeight + 60) + "px");
+  for(var i = 0; i < n; i++){
+    var p = document.createElement("i");
+    p.style.left = (Math.random() * 100) + "%";
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = (Math.random() * 0.4) + "s";
+    wrap.appendChild(p);
+  }
+  host.appendChild(wrap);
+  setTimeout(function(){ wrap.remove(); }, 2800);
+}
+
+/* ---------- end screen star burst ---------- */
+var SB_NEW = { stars:32, circles:8, startV:14, decay:0.975, ticks:150,
+               shots:[0,220,440], spin:0.18, starScale:1.8, circleScale:1.0 };
+var SB_OLD = { stars:80, circles:20, startV:22, decay:0.96,  ticks:100,
+               shots:[0,150,300], spin:0.30, starScale:1.8, circleScale:1.0 };
+
+function starBurst(host, o){
+  cue(host, "celebrate");
+  host.querySelectorAll("canvas.fx").forEach(function(c){ c.remove(); });
+  var W = host.clientWidth, H = host.clientHeight;
+  var cv = document.createElement("canvas");
+  cv.className = "fx"; cv.width = W; cv.height = H;
+  cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;";
+  host.insertBefore(cv, host.firstChild);
+  var ctx = cv.getContext("2d"), parts = [];
+  /* the real stage is 1333x750; scale velocity and size so the preview reads true */
+  var k = W / 1333;
+  var COLORS = ["#FFE400","#FFBD00","#E89400","#FFCA6C","#FDFFB8"];
+
+  function starPath(r){
+    ctx.beginPath();
+    for(var i = 0; i < 10; i++){
+      var rad = (i % 2 === 0) ? r : r / 2, a = Math.PI / 5 * i - Math.PI / 2;
+      ctx[i === 0 ? "moveTo" : "lineTo"](Math.cos(a) * rad, Math.sin(a) * rad);
+    }
+    ctx.closePath();
+  }
+  function add(n, scalar, shape){
+    for(var i = 0; i < n; i++){
+      var a = Math.random() * Math.PI * 2;
+      parts.push({ x:W/2, y:H*0.52, ax:Math.cos(a), ay:Math.sin(a),
+        vel:o.startV * k * (0.5 + Math.random()), tick:0,
+        scalar:scalar * k, shape:shape,
+        color:COLORS[Math.floor(Math.random()*COLORS.length)],
+        rot:Math.random()*Math.PI*2, spin:(Math.random()-.5)*o.spin });
+    }
+  }
+  function shoot(){ add(o.stars, o.starScale, "star"); add(o.circles, o.circleScale, "circle"); }
+  o.shots.forEach(function(ms){ ms ? setTimeout(shoot, ms) : shoot(); });
+
+  /* derived from the LAST shot, so retiming the shots cannot end the loop early */
+  var minFrames = Math.max.apply(null, o.shots) / 16 + 20;
+  var frames = 0;
+  (function frame(){
+    ctx.clearRect(0, 0, W, H);
+    var alive = false;
+    for(var i = 0; i < parts.length; i++){
+      var p = parts[i];
+      if(p.tick >= o.ticks) continue;
+      alive = true;
+      p.x += p.ax*p.vel; p.y += p.ay*p.vel; p.vel *= o.decay;
+      p.rot += p.spin; p.tick++;
+      ctx.globalAlpha = 1 - p.tick/o.ticks;
+      ctx.fillStyle = p.color;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      if(p.shape === "star"){ starPath(8*p.scalar); ctx.fill(); }
+      else { ctx.beginPath(); ctx.arc(0,0,6*p.scalar,0,Math.PI*2); ctx.fill(); }
+      ctx.restore();
+    }
+    frames++;
+    if(alive || frames < minFrames) requestAnimationFrame(frame);
+    else setTimeout(function(){ cv.remove(); }, 300);
+  })();
+}
+
+
+/* ---------- 5 + 6. answer select ---------- */
+var crownOn = true;
+
+function still(){
+  try{ return document.documentElement.classList.contains("no-anim") ||
+    (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
+  catch(e){ return false; }
+}
+function mk(cls){ var i = document.createElement("i"); i.className = cls; return i; }
+
+/* Tempo lives in CSS (--fx-beat / --fx-reward) so the two effects cannot drift
+   apart. JS reads it rather than keeping a second copy. Custom properties do not
+   resolve calc(), so the two numbers are read and multiplied here. */
+function tempo(el){
+  var cs = getComputedStyle(el);
+  function num(p, d){
+    var v = parseFloat(cs.getPropertyValue(p));
+    if(!v && v !== 0) return d;
+    return v > 20 ? v / 1000 : v;
+  }
+  var beat = num("--fx-beat", 0.4);
+  return { beat: beat, reward: beat * (parseFloat(cs.getPropertyValue("--fx-reward")) || 2) };
+}
+
+/* Every deferred step is parked ON THE TILE so selClear can cancel it. Without
+   this a second play inherits the FIRST play's pending release: tap a wrong tile
+   twice and the stale timer strips the state off the new beat a few hundred ms in,
+   so the second shake dies half way. Owning the timers is what makes the effects
+   safely re-fireable, which the 2-attempt ladder needs. */
+function later(el, fn, ms){
+  el._selT = el._selT || [];
+  el._selT.push(setTimeout(fn, ms));
+}
+
+/* Wipe every feedback state off a tile. Also the reset half of a re-fire: adding a
+   class back in the same frame you removed it does NOT restart the animation - the
+   forced reflow in the callers is what does. */
+function selClear(el){
+  if(el._selT){ for(var j = 0; j < el._selT.length; j++) clearTimeout(el._selT[j]); }
+  el._selT = [];
+  el.classList.remove("ck-correct", "wg-wrong", "wg-out", "wg-rel",
+                      "old-correct", "old-wrong");
+  var fx = el.querySelectorAll(".ck-fx,.wg-fx");
+  for(var i = 0; i < fx.length; i++) fx[i].remove();
+}
+
+function ckPlay(el, o){
+  o = o || {};
+  var crown = (o.crown == null) ? 5 : o.crown;
+  selClear(el);
+  void el.offsetWidth;                        /* forced reflow - restarts the pop */
+  var dur = o.dur || tempo(el).reward;        /* CSS owns the tempo */
+  if(o.dur) el.style.setProperty("--ckT", dur + "s");
+
+  var fx = mk("ck-fx");
+
+  if(crown && !still()){
+    var cr = mk("ck-crown");
+    /* clientWidth is layout px INSIDE the scaled stage - i.e. design px already.
+       getBoundingClientRect() here would come back multiplied by --scale (R1). */
+    var w = el.clientWidth || 96, h = el.clientHeight || 96;
+    var rx = w * 0.46, ry = h * 0.46;      /* the tile's own edge */
+    for(var i = 0; i < crown; i++){
+      var t = (crown === 1) ? 0.5 : i / (crown - 1);
+      var a = (-158 + t * 136 + rnd(-7, 7)) * Math.PI / 180;   /* TOP arc only */
+      var x0 = Math.cos(a) * rx, y0 = Math.sin(a) * ry;       /* start ON the edge */
+      var out = rnd(.20, .34);                                /* ...and travel out */
+      var s = mk("");
+      s.style.cssText =
+        "--ss:" + rnd(7, 12).toFixed(1) + "px;" +
+        "--x0:" + x0.toFixed(1) + "px;" +
+        "--y0:" + y0.toFixed(1) + "px;" +
+        "--sx:" + (x0 + Math.cos(a) * w * out).toFixed(1) + "px;" +
+        "--sy:" + (y0 + Math.sin(a) * h * out).toFixed(1) + "px;" +
+        "--sr:" + Math.round(rnd(-140, 140)) + "deg;";
+      cr.appendChild(s);
+    }
+    fx.appendChild(cr);
+  }
+
+  /* class FIRST - the border and pop must not wait on the decoration being built */
+  el.classList.add("ck-correct");
+  el.appendChild(fx);
+  cue(el, "correct");
+  /* Only the TRANSIENT layers are swept. .ck-correct stays: the green outline is
+     the correct-mark and it belongs to the tile until the slide advances. */
+  later(el, function(){
+    var t = fx.querySelectorAll(".ck-crown");
+    for(var i = 0; i < t.length; i++) t[i].remove();
+  }, dur * 1050);
+}
+
+function wgPlay(el, o){
+  o = o || {};
+  selClear(el);
+  void el.offsetWidth;
+  var dur = o.dur || tempo(el).beat;          /* CSS owns the tempo */
+  if(o.dur) el.style.setProperty("--wgT", dur + "s");
+  el.classList.add("wg-wrong");          /* class first - see ckPlay */
+  cue(el, "wrong");
+  var fx = mk("wg-fx");
+  fx.appendChild(mk("wg-pulse"));
+  el.appendChild(fx);
+  /* RELEASE on a timeout, never on animationend: under the reduced-motion kill
+     switch animationend never fires and the tile would stay red forever - on
+     exactly the devices least able to recover from it. (R5, second half.)
+     .wg-rel goes on BEFORE .wg-wrong comes off so the border has something to
+     transition with; see the CSS note. */
+  later(el, function(){
+    el.classList.add("wg-rel");
+    el.classList.remove("wg-wrong");
+    var f = el.querySelector(".wg-fx"); if(f) f.remove();
+    later(el, function(){
+      el.classList.remove("wg-rel");
+      if(o.then) o.then();
+    }, 260);
+  }, dur * 1500 + 40);
+}
+
+/* elimination - shakes once, recedes, and STAYS recessed. No auto-clear. */
+function wgOut(el, o){
+  o = o || {};
+  selClear(el);
+  void el.offsetWidth;
+  var dur = o.dur || tempo(el).beat;
+  if(o.dur) el.style.setProperty("--wgT", dur + "s");
+  el.classList.add("wg-out");
+  cue(el, "wrong");
+  var fx = mk("wg-fx");
+  fx.appendChild(mk("wg-pulse"));
+  el.appendChild(fx);
+}
+
+function tiles(id){ return document.getElementById(id).querySelectorAll(".opt-cell"); }
+function resetRow(id){
+  var t = tiles(id);
+  for(var i = 0; i < t.length; i++){ selClear(t[i]); t[i].style.removeProperty("--ckT");
+    t[i].style.removeProperty("--wgT"); }
+}
+
+
+/* ---------- 7. object outline (any shape) ---------- */
+var OL_ST = ["is-correct", "is-wrong", "is-muted"];
+
+function olSet(el, state){
+  if(!el) return;
+  /* the same two cues as the tiles: a child should not have to learn a second
+     vocabulary because the mechanic changed */
+  if(state === "correct") cue(el, "correct");
+  else if(state === "wrong") cue(el, "wrong");
+  for(var i = 0; i < OL_ST.length; i++) el.classList.remove(OL_ST[i]);
+  void el.offsetWidth;                       /* restart - same reason as recipe 19 */
+  if(state) el.classList.add("is-" + state);
+}
+function olBeat(el){
+  var v = parseFloat(getComputedStyle(el).getPropertyValue("--olT"));
+  if(!v) return 0.4;
+  return v > 20 ? v / 1000 : v;
+}
+/* wrong RELEASES back to idle white - the child gets another attempt, exactly as
+   the tile does in recipe 20. Timeout, not animationend: under the reduced-motion
+   kill-switch animationend never fires. */
+function olWrong(el, then){
+  olSet(el, "wrong");
+  if(el._olT) clearTimeout(el._olT);
+  el._olT = setTimeout(function(){
+    el.classList.remove("is-wrong");
+    if(then) then();
+  }, olBeat(el) * 1500 + 40);
+}
+function olReset(scope){
+  var els = document.querySelectorAll(scope + " .ol");
+  for(var i = 0; i < els.length; i++){
+    if(els[i]._olT) clearTimeout(els[i]._olT);
+    olSet(els[i], "");
+  }
+}
+
+/* Rolling frame-time readout. The sky comparison is about repaint cost, not looks,
+   so without a number on screen the two modes appear identical. */
+(function(){
+  var el, last = 0, acc = 0, n = 0;
+  function tick(t){
+    el = el || document.getElementById("fps");
+    if(last){ acc += t - last; n++; }
+    last = t;
+    if(n >= 30 && el){
+      el.textContent = (acc / n).toFixed(1) + " ms/frame";
+      acc = 0; n = 0;
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* Live audio readout. If a cue is inaudible this says whether the code ran, whether
+   the browser started the context, and what level is leaving the graph. */
+(function(){
+  var el, peakHold = 0, decay = 0;
+  function paint(){
+    el = el || document.getElementById("sfxdiagout");
+    if(el){
+      var d = FLNMotion.sfx.diagnose();
+      if(d.outputPeak > peakHold){ peakHold = d.outputPeak; decay = 60; }
+      else if(decay > 0){ decay--; } else { peakHold *= 0.92; }
+      var live = peakHold > 0.002;
+      el.innerHTML =
+        'context <b>' + d.context + '</b> &nbsp; clock ' +
+          (d.clockRunning ? '<span class="good">running</span>' : '<span class="bad">STOPPED</span>') +
+        ' &nbsp; ' + (d.sampleRate ? (d.sampleRate / 1000).toFixed(1) + 'kHz' : '-') +
+        ' &nbsp;|&nbsp; cues fired <b>' + d.cuesFired + '</b>' +
+        ' &nbsp;|&nbsp; output ' +
+          (d.samplePlaying ? '<span class="good">recording</span>'
+            : live ? '<span class="good">' + (20 * Math.log10(peakHold)).toFixed(0) + ' dBFS</span>'
+                   : '<span class="bad">silent</span>') +
+        ' &nbsp;|&nbsp; vol ' + d.volume;
+    }
+    requestAnimationFrame(paint);
+  }
+  requestAnimationFrame(paint);
+})();
+
+var ACTIONS = {
+  mute: function(btn){
+    var card = btn.closest(".card");
+    var off = card.getAttribute("data-mute") !== "1";
+    card.setAttribute("data-mute", off ? "1" : "0");
+    btn.classList.toggle("off", off);
+    btn.setAttribute("aria-label", off ? "Sound off" : "Sound on");
+    btn.title = off ? "Unmute this card" : "Mute this card";
+    if(!off){
+      /* Unmuting plays a short cue back at you. Without it the button is silent in
+         both directions, so there is no way to tell "sound is on" from "sound is
+         broken" - and clicking it expecting a preview just mutes the card. */
+      FLNMotion.sfx.resume();
+      FLNMotion.sfx.pick();
+    }
+  },
+  /* The sky replaced a BAKED BACKGROUND, not an older animation: the decorations
+     lived inside startnew_bg.webp. So "old" freezes the field and kills the tap
+     burst - that is what was there before, not a slower version of this. */
+  skyOld: function(btn){
+    var on = document.getElementById("sky").classList.toggle("flat");
+    document.getElementById("endSky").classList.toggle("flat", on);
+    btn.textContent = on ? "Compare: new" : "Compare: old";
+    btn.classList.toggle("on", on);
+    /* a star popped while it was live must come back, or the raster has a hole */
+    if(on){
+      var g = document.querySelectorAll(".sky i.popped");
+      for(var i = 0; i < g.length; i++) g[i].classList.remove("popped");
+    }
+    var c = document.getElementById("sgCard");
+    if(c) c.textContent = on ? "nothing to tap" : "tap a star →";
+    var h = document.getElementById("skyHint");
+    if(h) h.textContent = on
+      ? "Baked into startnew_bg.webp - nothing moves, nothing is tappable"
+      : "Click any drifting star";
+  },
+  /* Deviation #1 on its own axis, so it can be judged against the frame-time badge */
+  skyGlow: function(btn){
+    var on = document.getElementById("sky").classList.toggle("filterglow");
+    document.getElementById("endSky").classList.toggle("filterglow", on);
+    btn.textContent = "Glow: " + (on ? "filter" : "opacity");
+    btn.classList.toggle("on", on);
+  },
+  /* the nudge shipped as a press with no ripple at all - recipe 4 added the
+     wavefronts, so "old" here is simply the hand without them */
+  nudgeOld: function(btn){
+    var off = document.documentElement.classList.toggle("nofx");
+    btn.textContent = off ? "Compare: new" : "Compare: old";
+    btn.classList.toggle("on", off);
+    var t = document.querySelector('button[data-act="fxToggle"]');
+    if(t) t.textContent = "Ripple: " + (off ? "off" : "on");
+  },
+  olOld: function(btn){
+    var t = document.querySelectorAll("#olStage .ol"), on = false;
+    for(var i = 0; i < t.length; i++) on = t[i].classList.toggle("boxed");
+    btn.textContent = on ? "Compare: new" : "Compare: old";
+    btn.classList.toggle("on", on);
+  },
+  /* card 7 - alpha engine */
+  olpick: function(btn){
+    if(btn.dataset.r === "1"){ olReset("#olStage"); olSet(btn, "correct"); }
+    else olWrong(btn);
+  },
+  olReset: function(){ olReset("#olStage"); },
+  olMute: function(){
+    var t = document.querySelectorAll("#olStage .ol");
+    for(var i = 0; i < t.length; i++)
+      olSet(t[i], t[i].dataset.r === "1" ? "correct" : "muted");
+  },
+  olThick: function(btn){
+    var st = document.getElementById("olStage");
+    var w = (parseFloat(st.style.getPropertyValue("--ol-w")) || 4) + 2;
+    if(w > 8) w = 2;
+    st.style.setProperty("--ol-w", w + "px");
+    btn.textContent = "Stroke: " + w + "px";
+  },
+  /* the demo tiles */
+  pick: function(btn){
+    if(btn.dataset.fx === "ck"){ resetRow("ckStage"); ckPlay(btn, {crown:crownOn ? 5 : 0}); }
+    else { wgPlay(btn); }
+  },
+  ckReplay: function(){ var t = tiles("ckStage"); resetRow("ckStage");
+    ckPlay(t[1], {crown:crownOn ? 5 : 0}); },
+  ckCrown: function(btn){ crownOn = !crownOn;
+    btn.textContent = "Crown: " + (crownOn ? "on" : "off");
+    var t = tiles("ckStage"); resetRow("ckStage"); ckPlay(t[1], {crown:crownOn ? 5 : 0}); },
+  ckOld: function(){ var t = tiles("ckStage"); resetRow("ckStage");
+    void t[1].offsetWidth; t[1].classList.add("old-correct"); cue(t[1], "correct"); },
+  wgReplay: function(){ var t = tiles("wgStage"); resetRow("wgStage"); wgPlay(t[1]); },
+  wgKill:   function(){ var t = tiles("wgStage"); resetRow("wgStage"); wgOut(t[1]); },
+  wgOld:    function(){ var t = tiles("wgStage"); resetRow("wgStage");
+    void t[1].offsetWidth; t[1].classList.add("old-wrong"); cue(t[1], "wrong"); },
+  rebuildSky: function(btn){
+    var sky = document.getElementById("sky");
+    buildSky(sky, 16);
+    cue(sky, "pling");
+  },
+  starburst:    function(){ starBurst(document.getElementById("sbStage"), SB_NEW); },
+  starburstOld: function(){ starBurst(document.getElementById("sbStage"), SB_OLD); },
+  confetti:    function(){ confettiNew(document.getElementById("confStage"), 80); },
+  confettiOld: function(){ confettiOld(document.getElementById("confStage"), 80); },
+  fxToggle: function(btn){
+    var off = document.documentElement.classList.toggle("nofx");
+    btn.textContent = "Ripple: " + (off ? "off" : "on");
+  },
+  pinToggle: function(btn){
+    var on = document.documentElement.classList.toggle("pin");
+    btn.classList.toggle("on", on);
+  },
+  /* the apple is obj_apple.webp, a content asset - the kit ships no target art */
+  targetToggle: function(btn){
+    var off = document.documentElement.classList.toggle("notarget");
+    btn.classList.toggle("on", !off);
+  }
+};
+
+document.addEventListener("click", function(e){
+  /* [data-act], not button[data-act]: the outline demo's targets are the objects
+     themselves (an <img> of a parrot), not buttons. */
+  var btn = e.target.closest("[data-act]"); if(!btn) return;
+  var fn = ACTIONS[btn.dataset.act];
+  if(fn) try{ fn(btn); }catch(err){ console.warn(err); }
+});
+
+/* Same lane count on both screens: in the real game this is ONE .sg-sky element,
+   shown on body.is-start and body.is-end alike. Only the mask hole differs. */
+buildSky(document.getElementById("sky"), 16);
+buildSky(document.getElementById("endSky"), 16);
+confettiNew(document.getElementById("confStage"), 80);
+/* if the celebrating mascot is not reachable (file opened standalone), fall back */
+(function(){
+  var sw = document.getElementById("swifty");
+  sw.addEventListener("error", function(){
+    sw.classList.add("missing");
+    document.getElementById("sbStage").classList.add("nosw");
+  });
+})();
+starBurst(document.getElementById("sbStage"), SB_NEW);
+
+/* Boot demos are done. From here everything that makes a noise is something the
+   user asked for: a Replay, a Compare, or popping a star / tile / object. */
+requestAnimationFrame(function(){ booting = false; });
+
+/* The demo borrows real art from the parrot activity. If the preview is opened
+   somewhere that folder is not reachable, drop the background rather than showing
+   a broken image - the outline itself still demonstrates, since it is derived from
+   each sprite's own alpha and needs no scene. */
+(function(){
+  var bgs = document.querySelectorAll(".scene .bg");
+  for(var i = 0; i < bgs.length; i++){
+    bgs[i].addEventListener("error", function(){
+      this.style.display = "none";
+      this.parentNode.classList.add("nobg");
+    });
+  }
+})();
+</script>
+</body>
+</html>
