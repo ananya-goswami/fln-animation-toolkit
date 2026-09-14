@@ -2619,18 +2619,32 @@ art, or use a generated band.
 ## 22. Sound
 
 **▶ Preview:** every card plays its own cues, and each card header carries a speaker
-button that mutes **only that card** · **Built** · also on disk as WAVs in `sfx-audition/`
+button that mutes **only that card** · **Built**
 
-Seven cues, shared by every effect in the kit. No audio files ship - it is all synthesised,
-so there is nothing to add to `ASSET_BYTES`, nothing to preload, and it works on `file://`.
+Five cues, shared by every effect in the kit. Four of them are real recordings, so unlike
+the rest of the kit they **do** need adding to `ASSET_BYTES` - about 29 KB for the three
+in `sfx/`, and the fleet's own cheer is already on disk in every activity.
 
 ### These are real recordings, and the synth is switched off
 
 Three rounds of synthesised cues were rejected as machine-made, and that judgement
-was right - Web Audio synthesis has a ceiling for warm, kid-friendly sound. A round
-of CC0 files from Kenney failed too, for a reason worth writing down: they came from
-an **interface** pack, so they were synthesised UI blips. No file from a UI pack was
-ever going to work here.
+was right - Web Audio synthesis has a ceiling for warm, kid-friendly sound. Rounds of
+CC0 files from Kenney's **interface** pack failed too, and it took measuring a reel the
+team picked out themselves to see why. Against that reference a UI blip is wrong on
+three axes at once:
+
+| | the reel the team picked | Kenney interface pack |
+|---|---|---|
+| length | 1.0 - 1.15s | 0.45s |
+| warmth (spectral centroid) | 1500 - 1770 Hz | 2558 Hz |
+| attack | 99 - 178ms | 65ms |
+
+Half the length, an octave brighter, and twice as sharp on the attack. That is the
+difference between a played instrument and a beep, and it is what "machinic" meant every
+time it was said. **Filter on attack time before anything else** - a sound that reaches
+full level in under ~60ms reads as a machine however nice its pitch is. Of 144 CC0 files
+searched, the 11 that cleared the bar all came from an **instrument** pack; not one came
+from the interface pack.
 
 What ships is four real recordings, three of them supplied by the team:
 
@@ -2654,11 +2668,18 @@ shipped unnoticed:
 - **`wrong`** ran **3.29s**, but the wrong-answer beat resolves by ~900ms, so it would
   still be sounding during the next question. Its useful energy ends at 0.95s; trimmed
   to 1.05s.
-- **`correct`** came from a **16.8s preview reel of eight takes**, most of which FALL -
-  the obvious first take would have put a descending "wrong" shape on a correct answer.
-  It is no longer used at all: the reel carries a **spoken stock watermark**, and a
-  watermarked preview is by definition not the licensed asset. `correct.ogg` is now a
-  CC0 Kenney file, transposed down into the same warm register as the wrong cue.
+- **`correct`** was going to come from a **16.8s preview reel of eight takes**, and two
+  separate things stopped it. Most of the takes FALL, so the obvious first one would have
+  put a descending "wrong" shape on a correct answer. And the reel carries a **spoken
+  stock watermark** - a watermarked preview is by definition not the licensed asset, so
+  it cannot ship however good it sounds. Stripping the watermark is not the way round
+  that: it is the marker saying the file has not been paid for.
+
+  What ships instead was chosen by *measuring* that reel and matching it - Kenney's CC0
+  `jingles_SAX03`, at **native pitch**. Nothing is transposed. An earlier pick was shifted
+  to 0.65x to warm it up and was rejected as processed, which is the same complaint
+  wearing a different hat; a recording left at its own pitch sounds like an instrument
+  because it is one.
 
 **Check pitch direction before using anything.** It is the one property that decides
 whether a sound means yes or no, and nothing in a filename tells you. Measure it as a
@@ -2690,32 +2711,33 @@ muting still works because it is enforced a level up, in `cue()`.
 
 Rendered offline and measured, not estimated:
 
-| cue | fires on | length | character |
-|---|---|---|---|
-| `correct` | recipes 19, 21 | 0.29s | warm confirmation, rising a fourth |
-| `wrong` | recipes 20, 21 | 0.33s | soft falling "hmm?", no buzz |
-| `sprinkle` | recipe 7 confetti | 0.91s | steel-drum success flourish |
-| `celebrate` | recipe 8 end screen | 1.10s | the fleet's own cheer |
-| `burst` | recipe 2, a star popped | 0.28s | short glassy shimmer |
-| `pick` | an object selected | 0.04s | a tick |
-| `tick` | a fingertip landing | synth | the only cue with no recording |
+| cue | fires on | length | pitch | warmth | attack |
+|---|---|---|---|---|---|
+| `correct` | recipes 19, 21 | 1.00s | **+10.9 st, rising** | 931 Hz | 100ms |
+| `wrong` | recipes 20, 21 | 0.98s | **-4.8 st, falling** | 640 Hz | 335ms |
+| `burst` | recipe 2 stars, end-screen burst, confetti | 0.14s | - | 1601 Hz | 14ms |
+| `celebrate` | registered, not currently fired | 0.97s | +12.2 st, rising | 1399 Hz | 125ms |
 
-**Every cue is trimmed to the same peak**, so none jumps out against another. The trims in
-`TRIM` were not chosen by ear - each cue was rendered offline and measured, and the trim
-solved for a -10 dBFS target. Before calibration the spread was **20 dB**; after, **0.6 dB**.
-Cues that randomise their notes (`sprinkle`, `burst`) still vary a few dB take to take,
-which is the point of randomising them.
+**`correct` and `wrong` are a matched pair on purpose**: the same length to within 20ms,
+and opposite pitch directions. A child gets the answer from the *shape* of the sound
+before they have parsed anything else, and the pair only reads that way if the only
+obvious difference between them is up versus down.
 
-The two cues a child hears constantly sit around **-6 to -12 dBFS peak**, which is ordinary
-UI level, and the incidental ones trail off to -29. A **limiter** on the bus is what lets the
-master be that loud safely: a tap landing on top of the confetti cannot clip.
+**`burst` breaks the 60ms attack rule, and should.** It is a pop, not a reward tone -
+percussive is the whole point, and the rule above is about the two tonal cues. Do not
+"fix" it.
 
-The first pass was mixed far lower - `correct` at -19 dBFS - reasoning about a classroom
-tablet over a teacher's voice. In practice that was **inaudible on a laptop at normal
-volume**, which is not "gentle", it is broken. Peak level is not the same thing as perceived
-loudness: these are short struck tones and their RMS is still around -25 dBFS, so they read
-as soft even at a -6 peak. If a room really needs them quieter, drop `FLNMotion.sfx.volume`
-rather than re-tuning the individual cues, which are balanced against each other.
+**Level is matched on mean, not peak.** All four peak at about **-1 dBFS** because each
+was peak-normalised to 0.89, but peak is not loudness: their mean levels still run from
+**-10 dB** (`correct`) to **-24 dB** (`burst`), and that spread is correct - a 0.14s pop
+with a long decay has a low mean by construction and would sound violent if pushed to
+match a sustained tone. Per-cue trims live in `FLNMotion.sfx.vol`, and `S.master` (0.75)
+scales the lot. If a room needs them quieter, move `S.master` rather than the individual
+cues, which are balanced against each other.
+
+**Normalise with a measured gain, never a dynamics filter** - see the note above. The
+peak-normalise happens before encoding; Vorbis can overshoot a little on the way out, so
+check the encoded file, not the WAV.
 
 **`correct` and `wrong` are the same two sounds in every mechanic** - tiles, objects in a
 scene, anything added later. A child should not have to learn a second vocabulary because the
@@ -3053,7 +3075,9 @@ nothing is tappable and a star sound would be claiming otherwise).
 | Key | Default | Effect |
 |---|---|---|
 | `FLNMotion.sfx.enabled` | `true` | Master switch. Setting it false silences everything and creates no context. |
-| `FLNMotion.sfx.volume` | `0.85` | Master trim on top of the per-cue levels. |
+| `FLNMotion.sfx.master` | `0.75` | **The loudness knob.** Scales every sampled cue, on top of the per-cue balance. |
+| `FLNMotion.sfx.vol` | per cue | Balance *between* cues (`{correct:0.85, burst:0.8, …}`). Touch this to rebalance, not to change overall level. |
+| `FLNMotion.sfx.volume` | `1.5` | Gain on the **synth** bus only. With `allowSynth` false it does nothing — `master` is the one you want. |
 | `FLNMotion.sfx.resume()` | – | Call from a real gesture handler. |
 | `FLNMotion.sfx.render(cue, secs, cb)` | – | Offline render of one cue, for measuring or exporting. |
 | `FLNMotion.sfx.diagnose()` | – | Why you cannot hear anything. See below. |

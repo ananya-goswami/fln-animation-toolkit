@@ -1,15 +1,17 @@
 Sound effects used by the FLN Animation Kit.
 
-  correct.ogg   Kenney "Interface Sounds", question_003.ogg  -  CC0 1.0 (public
-                domain, no attribution required).  kenney.nl
-                Transposed down to 0.65x so it sits in a warm register instead of
-                its native 4440Hz brightness, peak-normalised to 0.89, 130ms fade.
-                Rises 10.7 semitones - verified by pitch contour, not by filename.
+  correct.ogg   Kenney "Jingles" pack, jingles_SAX03.ogg  -  CC0 1.0 (public domain,
+                no attribution required).  kenney.nl
+                Native pitch - nothing is transposed. Trimmed to where its useful
+                energy ends (1.035s), peak-normalised to 0.89, 160ms fade.
+                Rises 10.9 semitones - verified by pitch contour, not by filename.
+                Picked by measuring the preview reel noted below and matching it on
+                length (1.05s -> 1.00s) and attack (99ms -> 100ms).
 
   wrong.ogg     "universfield-wrong-answer-129254" (supplied by the team, Pixabay).
                 Original is 3.29s but its useful energy ends at 0.95s, so it is
                 trimmed to 1.05s - untrimmed it ran into the next question.
-                Peak-normalised to 0.89, 170ms fade. Falls 5.1 semitones.
+                Peak-normalised to 0.89, 170ms fade. Falls 4.8 semitones.
 
   burst.ogg     "freesound_community-pick-92276" (supplied by the team, Freesound).
                 Original carries 512ms of LEADING SILENCE, which made every star pop
@@ -21,10 +23,12 @@ ready-made and their exact terms are not recorded here. The Kenney file is CC0 a
 needs nothing.
 
 NOT USED, and why:
-  A stock preview reel ("preview.mp3") was briefly the correct-answer sound. It
-  carries a spoken watermark. A watermarked preview is by definition not the
-  licensed asset, so it cannot ship whatever it sounds like - correct.ogg is the
-  CC0 file above instead.
+  "preview.mp3"  -  a 16.8s stock-marketplace preview reel of eight takes. This is
+  the sound the team liked, and correct.ogg above was chosen specifically to match
+  it, but the reel itself cannot ship: it carries a spoken watermark, and that
+  watermark is the marker saying the file has not been licensed. Stripping the
+  voiceover would not make it licensed. If the track is bought, drop the clean
+  download in as correct.ogg and delete this paragraph.
 
 Not in this folder:
   celebrate     the fleet's own assets/Audio/sfx_celebrate.ogg (MTKGA02's version,
