@@ -1,13 +1,14 @@
 # FLN Animation Kit
 
 Every reusable animation in the FLN fleet, in one place: the effects, how to install
-them, and the reasoning behind each one. This is the only document - `preview.html`
+them, and the reasoning behind each one. This is the only document - `index.html`
 is the only other thing you need to open.
 
 ```
 fln-animation-kit/
   ANIMATIONS.md    this file - effects, install steps, gotchas, the keyframe catalogue
-  preview.html     open it: all seven effects running, with sound and old-vs-new
+  index.html       open it: all seven effects running, with sound and old-vs-new
+  assets/          art the preview borrows from the activities
   sfx/             the sound files, and where they came from
   tools/           two scripts, needed only for recipe 21 on awkward art
 ```
@@ -132,7 +133,7 @@ and does not modify any activity folder. Both are separate, larger decisions.
 
 Every animation in the FLN fleet, in one place. 147 keyframes, 7 activities, no shared library.
 
-**See the installed effects:** open [`preview.html`](preview.html) - recipes 1 and 2.
+**See the installed effects:** open [`index.html`](index.html) - recipes 1 and 2.
 **Judge / tune the sky effect:** open the preview full-screen - real
 `vmax` CSS, real stage scaling, live controls, fps meter.
 Recipes 3-18 are marked **Reference only** - documented from existing code, not installed, no
@@ -257,7 +258,7 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{
 
 ## 1. Start screen stars (drift)
 
-**▶ Preview:** `preview.html#sky-drift` (one card shows both) · **Installed: yes**
+**▶ Preview:** `index.html#sky-drift` (one card shows both) · **Installed: yes**
 
 Stars, twinkles, rings and dots fly straight out from screen centre, fade in past the card, exit the
 frame, restart from the middle.
@@ -466,7 +467,7 @@ elements along their laps so the field looks established, not launched all at on
 
 ## 2. Start screen stars (tap to burst)
 
-**▶ Preview:** `preview.html#sky-drift` (one card shows both) · **Installed: yes**
+**▶ Preview:** `index.html#sky-drift` (one card shows both) · **Installed: yes**
 
 Tap a drifting element: white-blue flash, then 16 particles of **the same shape** in 6 hues, arcing
 out under gravity, with a synthesised pop. The element returns on its next lap.
@@ -679,7 +680,7 @@ values→options.
 
 ## 3. Nudge hand press (hesitation hint)
 
-**▶ Preview:** `preview.html#nudge-ripple` (the press is shown in that card) · **Built, not yet installed**
+**▶ Preview:** `index.html#nudge-ripple` (the press is shown in that card) · **Built, not yet installed**
 
 The guiding hand that appears when a child hesitates. Six treatments exist; **use C**.
 
@@ -766,7 +767,7 @@ bottom-centre), `oneHand` (clear stray demo hands).
 
 ## 4. Nudge hand tap ripple
 
-**▶ Preview:** `preview.html#nudge-ripple` · **Built, not yet installed** - real assets, shipped geometry
+**▶ Preview:** `index.html#nudge-ripple` · **Built, not yet installed** - real assets, shipped geometry
 
 Two wavefronts and three sparks break out of the fingertip exactly as the hand makes contact.
 
@@ -1028,7 +1029,7 @@ Source: `MTKGA02_L01_S01/app.js:256-269` + `style.css:2807-2808`
 
 ## 7. Correct answer confetti
 
-**▶ Preview:** `preview.html#confetti` · **Rebuilt** - the shipped version is replaced, not tuned
+**▶ Preview:** `index.html#confetti` · **Rebuilt** - the shipped version is replaced, not tuned
 
 Source of the original: `MTKGA02_L01_S01/app.js:272-290`.
 
@@ -1299,7 +1300,7 @@ flat rule will fight the new one.
 
 ## 8. Celebration star burst (end screen)
 
-**▶ Preview:** `preview.html#star-burst` · **Retuned** - fewer stars, slower drift
+**▶ Preview:** `index.html#star-burst` · **Retuned** - fewer stars, slower drift
 
 The only real canvas particle system in the repo. Source: `HI01H05_L02_S01/app.js:547-600`.
 
@@ -1758,7 +1759,7 @@ count sequence, so the counting VO never cuts the prompt off.
 
 ## 19. Correct answer select (tile confirm)
 
-**▶ Preview:** `preview.html#correct-select` · **Built** - supersedes recipe 9
+**▶ Preview:** `index.html#correct-select` · **Built** - supersedes recipe 9
 
 The beat that fires the instant a child taps the right tile. Recipe 7 (confetti) is the
 room-level celebration; this is the tile-level *confirmation*, and the two are meant to run
@@ -2050,7 +2051,7 @@ one place to change them.
 
 ## 20. Wrong answer select (tile correction)
 
-**▶ Preview:** `preview.html#wrong-select` · **Built** - supersedes recipe 11
+**▶ Preview:** `index.html#wrong-select` · **Built** - supersedes recipe 11
 
 Two states, because the fleet has two: a **transient** correction that releases the tile back
 to tappable, and **elimination**, which stays. They map onto `.opt-cell.wrong` and
@@ -2256,7 +2257,7 @@ html.no-anim .wg-out{opacity:.72;filter:saturate(.3);}
 
 ## 21. Tap the object - outline on any shape
 
-**▶ Preview:** `preview.html#object-outline` (engine A only - the engine B tile was
+**▶ Preview:** `index.html#object-outline` (engine A only - the engine B tile was
 removed) · **Built** · generalises recipe 10, which did this for one activity only
 
 "Tap the right thing in the picture", where every target is a different shape - a girl,
@@ -2403,7 +2404,7 @@ white outline readable against a pale wall.
 }
 
 /* ---------- ENGINE B - pre-baked ring band over a scene raster ---------- */
-/* No preview tile: the band demo was removed from preview.html. These rules are
+/* No preview tile: the band demo was removed from index.html. These rules are
    kept so the block stays one pasteable unit and matches recipe 21 verbatim. */
 /* One full-frame alpha per object, painted through as a mask, so a single asset
    serves idle, correct, wrong and muted just by changing the colour under it. */
