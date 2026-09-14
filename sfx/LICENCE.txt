@@ -1,29 +1,31 @@
-Sound effects used by the FLN Animation Kit (recipe 22).
+Sound effects used by the FLN Animation Kit.
 
-  correct.ogg   take 3 of "preview.mp3" (supplied by the team; Pixabay-style
-                preview reel of 8 takes). Take 3 is the one that RISES (+7
-                semitones) - most of the takes in that reel fall.
-                Trimmed to 1.15s, peak-normalised to 0.89, 170ms fade.
+  correct.ogg   Kenney "Interface Sounds", question_003.ogg  -  CC0 1.0 (public
+                domain, no attribution required).  kenney.nl
+                Transposed down to 0.65x so it sits in a warm register instead of
+                its native 4440Hz brightness, peak-normalised to 0.89, 130ms fade.
+                Rises 10.7 semitones - verified by pitch contour, not by filename.
 
   wrong.ogg     "universfield-wrong-answer-129254" (supplied by the team, Pixabay).
                 Original is 3.29s but its useful energy ends at 0.95s, so it is
                 trimmed to 1.05s - untrimmed it ran into the next question.
-                Peak-normalised to 0.89, 170ms fade.
+                Peak-normalised to 0.89, 170ms fade. Falls 5.1 semitones.
 
   burst.ogg     "freesound_community-pick-92276" (supplied by the team, Freesound).
-                Original carries 512ms of LEADING SILENCE, which would have made
-                every star pop arrive half a second after the tap; trimmed to the
-                onset, 0.40s, peak-normalised to 0.89.
-                Used for every "elements burst apart" moment: the landing-screen
-                stars, the end-screen burst, and the correct-answer confetti.
+                Original carries 512ms of LEADING SILENCE, which made every star pop
+                arrive half a second after the tap; trimmed to the onset, 0.40s.
+                Used for the landing-screen stars popping.
 
-Check the licence terms of the original downloads before shipping - they were
-supplied ready-made and their exact terms are not recorded here.
+Check the licence terms of the supplied downloads before shipping - they arrived
+ready-made and their exact terms are not recorded here. The Kenney file is CC0 and
+needs nothing.
+
+NOT USED, and why:
+  A stock preview reel ("preview.mp3") was briefly the correct-answer sound. It
+  carries a spoken watermark. A watermarked preview is by definition not the
+  licensed asset, so it cannot ship whatever it sounds like - correct.ogg is the
+  CC0 file above instead.
 
 Not in this folder:
   celebrate     the fleet's own assets/Audio/sfx_celebrate.ogg (MTKGA02's version,
-                the fullest of the six in the fleet). Registered but not currently
-                fired - the end screen uses burst.ogg instead.
-
-Earlier CC0 files from Kenney (kenney.nl) were removed: they came from an
-*interface* pack, so they were synthesised UI blips and read as machine-made.
+                the fullest of the six in the fleet), bundled at assets/.

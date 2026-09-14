@@ -2654,12 +2654,18 @@ shipped unnoticed:
 - **`wrong`** ran **3.29s**, but the wrong-answer beat resolves by ~900ms, so it would
   still be sounding during the next question. Its useful energy ends at 0.95s; trimmed
   to 1.05s.
-- **`correct`** was not one sound at all - a **16.8s preview reel of eight takes**.
-  Most of them FALL. Picking the obvious first take would have put a descending
-  "wrong" shape on a correct answer. Take 3 is the one that rises.
+- **`correct`** came from a **16.8s preview reel of eight takes**, most of which FALL -
+  the obvious first take would have put a descending "wrong" shape on a correct answer.
+  It is no longer used at all: the reel carries a **spoken stock watermark**, and a
+  watermarked preview is by definition not the licensed asset. `correct.ogg` is now a
+  CC0 Kenney file, transposed down into the same warm register as the wrong cue.
 
 **Check pitch direction before using anything.** It is the one property that decides
-whether a sound means yes or no, and nothing in a filename tells you.
+whether a sound means yes or no, and nothing in a filename tells you. Measure it as a
+**contour across the whole sound**, by spectral peak - a two-point autocorrelation
+octave-errors on percussive material, and an octave error flips the apparent direction,
+which is precisely the thing being tested. That bit me: the same file measured +11 and
+then -8 semitones on two different runs of the naive test.
 
 **Normalise by measuring, not with a dynamics filter.** `dynaudnorm` and single-pass
 `loudnorm` both overshot here and produced a **1.18 peak** - clipped. What works is
