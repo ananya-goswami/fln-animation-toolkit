@@ -2622,16 +2622,16 @@ art, or use a generated band.
 button that mutes **only that card** · **Built**
 
 Five cues, shared by every effect in the kit. Four of them are real recordings, so unlike
-the rest of the kit they **do** need adding to `ASSET_BYTES` - about 29 KB for the three
+the rest of the kit they **do** need adding to `ASSET_BYTES` - about 21 KB for the three
 in `sfx/`, and the fleet's own cheer is already on disk in every activity.
 
 ### These are real recordings, and the synth is switched off
 
 Three rounds of synthesised cues were rejected as machine-made, and that judgement
-was right - Web Audio synthesis has a ceiling for warm, kid-friendly sound. Rounds of
-CC0 files from Kenney's **interface** pack failed too, and it took measuring a reel the
-team picked out themselves to see why. Against that reference a UI blip is wrong on
-three axes at once:
+was right - Web Audio synthesis has a ceiling for warm, kid-friendly sound.
+
+Measuring a reel the team picked out themselves against Kenney's **interface** pack shows
+the two are different material on three axes at once:
 
 | | the reel the team picked | Kenney interface pack |
 |---|---|---|
@@ -2640,11 +2640,16 @@ three axes at once:
 | attack | 99 - 178ms | 65ms |
 
 Half the length, an octave brighter, and twice as sharp on the attack. That is the
-difference between a played instrument and a beep, and it is what "machinic" meant every
-time it was said. **Filter on attack time before anything else** - a sound that reaches
-full level in under ~60ms reads as a machine however nice its pitch is. Of 144 CC0 files
-searched, the 11 that cleared the bar all came from an **instrument** pack; not one came
-from the interface pack.
+difference between a played instrument and a beep. When picking a *reward* tone,
+**filter on attack time before anything else** - a sound that reaches full level in under
+~60ms reads as a machine however nice its pitch is. Of 144 CC0 files searched, the 11 that
+cleared that bar all came from an **instrument** pack; not one came from the interface pack.
+
+**The shipped `correct` cue deliberately does not follow that rule.** A `jingles_SAX03`
+pick that did match the reel (1.05s, 100ms attack) was tried and then **reverted on
+request** - the shorter, brighter interface-pack tone was preferred. The table above is
+kept because measuring is still the right way to *shortlist* a candidate; it is not the
+thing that decides. If this cue is revisited, that is the comparison to redo.
 
 What ships is four real recordings, three of them supplied by the team:
 
@@ -2675,11 +2680,10 @@ shipped unnoticed:
   it cannot ship however good it sounds. Stripping the watermark is not the way round
   that: it is the marker saying the file has not been paid for.
 
-  What ships instead was chosen by *measuring* that reel and matching it - Kenney's CC0
-  `jingles_SAX03`, at **native pitch**. Nothing is transposed. An earlier pick was shifted
-  to 0.65x to warm it up and was rejected as processed, which is the same complaint
-  wearing a different hat; a recording left at its own pitch sounds like an instrument
-  because it is one.
+  What ships instead is Kenney's CC0 `question_003` from the **interface** pack,
+  transposed **down to 0.65x** so it sits in a warmer register than its native 4440 Hz
+  brightness. A `jingles_SAX03` pick at native pitch was measured against the reel and
+  briefly shipped in its place, then reverted - see the note above.
 
 **Check pitch direction before using anything.** It is the one property that decides
 whether a sound means yes or no, and nothing in a filename tells you. Measure it as a
@@ -2713,15 +2717,23 @@ Rendered offline and measured, not estimated:
 
 | cue | fires on | length | pitch | warmth | attack |
 |---|---|---|---|---|---|
-| `correct` | recipes 19, 21 | 1.00s | **+10.9 st, rising** | 931 Hz | 100ms |
-| `wrong` | recipes 20, 21 | 0.98s | **-4.8 st, falling** | 640 Hz | 335ms |
-| `burst` | recipe 2 stars, end-screen burst, confetti | 0.14s | - | 1601 Hz | 14ms |
-| `celebrate` | registered, not currently fired | 0.97s | +12.2 st, rising | 1399 Hz | 125ms |
+| `correct` | recipes 19, 21 | 0.50s | **+10.7 st, rising** | 5601 Hz | 65ms |
+| `wrong` | recipes 20, 21 | 1.05s | **-5.1 st, falling** | 1524 Hz | 335ms |
+| `burst` | recipe 2 stars, end-screen burst, confetti | 0.42s | flat | 3131 Hz | 14ms |
+| `celebrate` | registered, not currently fired | 1.50s | +12.3 st, rising | 3234 Hz | 125ms |
 
-**`correct` and `wrong` are a matched pair on purpose**: the same length to within 20ms,
-and opposite pitch directions. A child gets the answer from the *shape* of the sound
-before they have parsed anything else, and the pair only reads that way if the only
-obvious difference between them is up versus down.
+All four are measured the same way: length is the decoded file duration, warmth a
+broadband spectral centroid, attack the time to 90% of peak, and pitch a spectral-peak
+contour from the first voiced frame to the last. An earlier version of this table mixed
+methods - useful-energy length, a narrower centroid band - so its numbers do not compare
+with these.
+
+**`correct` and `wrong` are no longer a matched pair.** They still carry opposite pitch
+directions, which is the property a child reads first - a rise means yes, a fall means no.
+But `correct` is now under half the length of `wrong` and about four times brighter, so
+"the only obvious difference is up versus down" no longer holds. That asymmetry is the
+accepted cost of the revert noted above; if the two ever read as mismatched in a
+classroom, length is the first thing to bring back together.
 
 **`burst` breaks the 60ms attack rule, and should.** It is a pop, not a reward tone -
 percussive is the whole point, and the rule above is about the two tonal cues. Do not
