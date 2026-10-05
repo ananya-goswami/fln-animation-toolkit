@@ -634,12 +634,70 @@ html.no-anim .ol-alpha,html.no-anim .ol-band{animation:none !important;}
 #sfxdiag b{font-family:"Segoe UI",system-ui,sans-serif;color:var(--navy);}
 #sfxdiag .bad{color:#c0392b;font-weight:700;}
 #sfxdiag .good{color:#1d8a4a;font-weight:700;}
+/* ---------- 8. game buttons (recipe 24) - the recipe CSS verbatim, art from assets/buttons/,
+   every selector under #game-buttons so this page's own button / button:hover rules cannot
+   paint over the art ---------- */
+/* ===== FLN ANIMATION KIT: buttons BEGIN ===== */
+/* Every pulse/press is on the individual `scale` property, never `transform`, so it cannot
+   fight whatever transform positions the button (translateX(-50%) centring etc.). */
+#game-buttons .gb-play,#game-buttons .gb-next{padding:0;border:0;border-radius:0;font-size:0;color:transparent;
+  line-height:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+/* PLAY - drop-shadow on the <img>, so the shadow follows the blob (box-shadow draws a box) */
+#game-buttons .gb-play{position:relative;isolation:isolate;width:112px;background:none;}
+#game-buttons .gb-play img{width:100%;height:auto;display:block;pointer-events:none;user-select:none;
+  filter:drop-shadow(0 9px 9px rgba(12,46,92,.34)) drop-shadow(0 2px 2px rgba(12,46,92,.20));}
+#game-buttons .gb-play.gb-waiting{cursor:default;}
+#game-buttons .gb-play.gb-waiting img{filter:drop-shadow(0 5px 5px rgba(70,70,82,.22));}
+#game-buttons .gb-play:not(.gb-waiting):active{scale:.94;}
+#game-buttons .gb-play::before{content:"";position:absolute;left:8%;right:8%;top:6%;bottom:10%;border-radius:50%;
+  z-index:-1;pointer-events:none;opacity:0;}                 /* the gold ring, behind the art */
+#game-buttons .gb-play.gb-pop{animation:gbPop .6s cubic-bezier(.34,1.3,.5,1) both;}
+#game-buttons .gb-play.gb-pop::before{animation:gbHalo .75s ease-out both;}
+#game-buttons .gb-play.gb-pulse{animation:gbPulse 1.15s cubic-bezier(.34,.62,.3,1) infinite;}
+#game-buttons .gb-play.gb-pulse::before{animation:gbHalo 1.15s ease-out infinite;}
+/* NEXT - the play button's gold / grey on a 170x62 pill, arrow only */
+#game-buttons .gb-next{width:170px;height:62px;cursor:default;
+  background:url("assets/buttons/btn-next-deactive.svg") center/100% 100% no-repeat;
+  filter:drop-shadow(0 4px 4px rgba(70,70,82,.22));}
+#game-buttons .gb-next.gb-active{cursor:pointer;background-image:url("assets/buttons/btn-next-default.svg");
+  filter:drop-shadow(0 7px 7px rgba(12,46,92,.32)) drop-shadow(0 2px 2px rgba(12,46,92,.18));
+  animation:gbNextPulse 1.15s cubic-bezier(.34,.62,.3,1) infinite;}
+#game-buttons .gb-next.gb-active:active{animation:none;scale:.96;filter:drop-shadow(0 3px 3px rgba(12,46,92,.28));}
+@keyframes gbPop{0%{scale:1;}35%{scale:1.2;}60%{scale:.93;}80%{scale:1.05;}100%{scale:1;}}
+@keyframes gbPulse{0%,100%{scale:1;}30%{scale:1.10;}58%{scale:.985;}}
+@keyframes gbNextPulse{0%,100%{scale:1;}30%{scale:1.08;}58%{scale:.985;}}
+@keyframes gbHalo{0%{opacity:1;box-shadow:0 0 0 0 rgba(248,190,42,.60);}
+  72%{opacity:1;box-shadow:0 0 0 26px rgba(248,190,42,0);}100%{opacity:0;box-shadow:0 0 0 0 rgba(248,190,42,0);}}
+@media (prefers-reduced-motion:reduce){
+  #game-buttons .gb-play,#game-buttons .gb-play::before,#game-buttons .gb-next{animation:none !important;}
+}
+/* ===== FLN ANIMATION KIT: buttons END ===== */
+#game-buttons .stage.gbs{display:flex;align-items:center;justify-content:center;gap:26px;
+  background:linear-gradient(180deg,#F2F7FA,#E6EEF6);}
+#game-buttons .gbs .gb-col{display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-size:11.5px;color:var(--muted);line-height:1.2;}
+/* Compare: old - the fleet's CSS pills these replaced (MTG2A04 style.css .sg-btn / .nav-btn, before
+   the art), as shipped: gold play pill pulsing from the first frame, a text "aage" pill */
+#game-buttons .gbo{display:none;}
+#game-buttons .gbs.old .gbo{display:flex;}
+#game-buttons .gbs.old .gb-play,#game-buttons .gbs.old .gb-next{display:none;}
+#game-buttons .gbo{align-items:center;justify-content:center;font-family:"Baloo 2","Noto Sans Devanagari",sans-serif;
+  font-weight:800;border:4.54px solid #fff;border-radius:44.56px;white-space:nowrap;}
+#game-buttons .gbo-play{font-size:32px;line-height:1.2;color:var(--navy);background:#FCB717;padding:14px 54px;cursor:pointer;
+  box-shadow:0 6px 6px rgba(0,0,0,.25),inset 4.54px 9.09px 12.12px rgba(255,255,255,.25),inset -4.54px -4.54px 13.63px rgba(116,60,0,.19);
+  animation:gboPulse 1.4s ease-in-out infinite;}
+#game-buttons .gbo-play:active{translate:0 3px;}
+#game-buttons .gbo-next{font-size:28px;line-height:1;color:#C2C2C2;background:#EDEDED;padding:10px 36px;min-width:186px;height:64px;
+  cursor:not-allowed;box-shadow:0 6px 6px rgba(0,0,0,.15);}
+#game-buttons .gbo-next.active{background:#FCB717;color:var(--navy);cursor:pointer;
+  box-shadow:0 6px 6px rgba(0,0,0,.25),inset 4.54px 9.09px 12.12px rgba(255,255,255,.25),inset -4.54px -4.54px 13.63px rgba(116,60,0,.19);}
+@keyframes gboPulse{0%,100%{scale:1;}50%{scale:1.03;}}
 </style>
 </head>
 <body>
 
 <h1>FLN Animation Kit - Preview</h1>
-<p class="sub">The sky is installed and shipping; the other six are built and ready to
+<p class="sub">The sky is installed and shipping; the other seven are built and ready to
 install. Each card has a speaker to mute it. Options and gotchas in
 <a href="ANIMATIONS.md"><code>ANIMATIONS.md</code></a>.</p>
 
@@ -740,8 +798,58 @@ install. Each card has a speaker to mute it. Options and gotchas in
   </div>
 
 
+  <div class="card" id="game-buttons">
+    <div class="hd"><b>8. Game buttons</b><button class="spk" data-act="mute" aria-label="Sound on" title="Mute this card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.4 8.6a4.8 4.8 0 0 1 0 6.8"/><path class="wave" d="M18.4 5.6a9 9 0 0 1 0 12.8"/><path class="slash" d="M4.5 19.5 19.5 4.5"/></svg></button></div>
+    <div class="stage plain gbs" id="gbStage">
+      <div class="gb-col"><button class="gb-play gb-waiting" id="gbPlay" type="button" data-act="gbPlay" aria-label="शुरू करें" aria-disabled="true"><img src="assets/buttons/btn-play-blob-waiting.svg" alt="" draggable="false"></button>
+        <button class="gbo gbo-play" type="button" data-act="gbPlayOld">शुरू करें</button>play</div>
+      <div class="gb-col"><button class="gb-next" id="gbNext" type="button" disabled>आगे</button>
+        <button class="gbo gbo-next" id="gbNextOld" type="button" disabled>आगे</button>next</div>
+    </div>
+    <div class="ft"><button data-act="gbGreet">Replay greeting</button>
+      <button data-act="gbNextToggle">Next: done</button>
+      <button data-act="gbOld">Compare: old</button>
+      <span id="gbHint">play goes live when the greeting ends</span></div>
+  </div>
+
 </div>
 
+<script>
+/* ===== FLN ANIMATION KIT: buttons BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion = window.FLNMotion || {};
+  var B = M.buttons = {
+    art: { play:"assets/btn-play-blob.svg", wait:"assets/btn-play-blob-waiting.svg" },
+    /* B.play(el) -> { ready(bool), waiting(), calm() }. ready(false) = grey, taps ignored;
+       ready(true) = gold + pop (only on the grey -> gold change) + pulse 0.6s later. */
+    play: function(btn){
+      var t = 0;
+      function waiting(){ return btn.classList.contains("gb-waiting"); }
+      function ready(on){
+        var was = !waiting(), img = btn.querySelector("img");
+        clearTimeout(t);
+        btn.classList.toggle("gb-waiting", !on);
+        btn.setAttribute("aria-disabled", on ? "false" : "true");
+        if(img) img.src = on ? B.art.play : B.art.wait;
+        if(!on){ btn.classList.remove("gb-pop", "gb-pulse"); return; }
+        if(was) return;                                  // already gold: no second pop
+        btn.classList.remove("gb-pulse");
+        if(!(M.still && M.still())){
+          btn.classList.remove("gb-pop"); void btn.offsetWidth; btn.classList.add("gb-pop");
+        }
+        t = setTimeout(function(){
+          btn.classList.remove("gb-pop");
+          if(!waiting()) btn.classList.add("gb-pulse");
+        }, 600);
+      }
+      function calm(){ clearTimeout(t); btn.classList.remove("gb-pulse", "gb-pop"); }
+      return { ready: ready, waiting: waiting, calm: calm };
+    },
+    next: function(btn, on){ btn.disabled = !on; btn.classList.toggle("gb-active", !!on); }
+  };
+})();
+/* ===== FLN ANIMATION KIT: buttons END ===== */
+</script>
 <script>
 "use strict";
 
@@ -1732,6 +1840,47 @@ document.addEventListener("click", function(e){
   var fn = ACTIONS[btn.dataset.act];
   if(fn) try{ fn(btn); }catch(err){ console.warn(err); }
 });
+
+/* ---------- 8. game buttons (recipe 24): the engine's timing, faked with timers ---------- */
+(function(){
+  var B = FLNMotion.buttons; B.art = { play:"assets/buttons/btn-play-blob.svg", wait:"assets/buttons/btn-play-blob-waiting.svg" };
+  var $ = function(id){ return document.getElementById(id); };
+  var play = B.play($("gbPlay")), greetT = 0;
+  function old(){ return $("gbStage").classList.contains("old"); }
+  function hint(){
+    $("gbHint").textContent = old()
+      ? "old: gold and pulsing from the start, even while the greeting speaks"
+      : (play.waiting() ? "greeting speaking - play is grey and ignores taps"
+                        : "greeting ended - pop, then the idle pulse until tapped");
+  }
+  function greet(){                                   /* a 2.5s "greeting": play grey */
+    clearTimeout(greetT);
+    play.ready(false); hint();
+    greetT = setTimeout(function(){ play.ready(true); hint(); }, 2500);
+  }
+  var A = {
+    gbGreet: greet,
+    gbPlay: function(btn){
+      if(play.waiting()) return;
+      play.calm(); cue(btn, "burst");
+      $("gbHint").textContent = "tapped - the pulse stops (the lesson would start here)";
+    },
+    gbPlayOld: function(btn){ cue(btn, "burst"); },
+    gbNextToggle: function(btn){
+      var on = !$("gbNext").classList.contains("gb-active"); B.next($("gbNext"), on);
+      $("gbNextOld").disabled = !on; $("gbNextOld").classList.toggle("active", on);
+      btn.textContent = on ? "Next: not done" : "Next: done";
+    },
+    gbOld: function(btn){
+      var on = $("gbStage").classList.toggle("old");
+      btn.textContent = on ? "Compare: new" : "Compare: old";
+      btn.classList.toggle("on", on);
+      if(on) hint(); else greet();
+    }
+  };
+  for(var k in A) if(A.hasOwnProperty(k)) ACTIONS[k] = A[k];
+  greet();
+})();
 
 /* Same lane count on both screens: in the real game this is ONE .sg-sky element,
    shown on body.is-start and body.is-end alike. Only the mask hole differs. */

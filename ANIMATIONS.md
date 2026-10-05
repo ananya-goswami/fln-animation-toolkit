@@ -9,6 +9,7 @@ fln-animation-kit/
   ANIMATIONS.md    this file - effects, install steps, gotchas, the keyframe catalogue
   index.html       open it: all seven effects running, with sound and old-vs-new
   assets/          art the preview borrows from the activities
+                   (assets/buttons/ - the game buttons, recipe 24)
   sfx/             the sound files, and where they came from
   tools/           two scripts, needed only for recipe 21 on awkward art
 ```
@@ -50,6 +51,7 @@ Four things cause almost every bug in this codebase:
 | 20. Wrong answer select | **Built** - supersedes recipe 11; in the preview, not installed |
 | 21. Tap the object (any shape) | **Built** - generalises recipe 10; in the preview, not installed |
 | 22. Sound | **Built** - 7 synthesised cues shared by every effect; in the preview, not installed |
+| 24. Game buttons (play, next) | **Built** - from MTG2A04_L02_S01's shipping buttons; in the preview, not installed |
 | 5-6, 9-18 | Documented from existing code; not yet rolled out as a deliberate pass |
 
 The kit code is **not byte-identical to what ships** - it fixes five known defects, listed under
@@ -3149,6 +3151,165 @@ there is no way to tell a broken cue from a muted speaker.
   card is muted. The effects never reference audio directly, so muting is a property of the
   thing making the noise rather than a global switch - which matters as soon as you want to
   silence one noisy effect while judging another.
+
+---
+
+## 24. Game buttons - play and next
+
+**Built** - lifted from `MTG2A04_L02_S01` (shipping there); in the preview (card 8), not installed
+elsewhere. These are the two buttons that move a child through a lesson, with the states and
+timing the reviews settled on. The art is in [`assets/buttons/`](assets/buttons/); copy what you
+use into the activity's `assets/`.
+
+| Button | Art (`assets/buttons/`) | Size | States |
+|---|---|---|---|
+| **Play** (start screen) | `btn-play-blob.svg`, `btn-play-blob-waiting.svg` (1429x1296 blob, gold / grey) | 112px wide | waiting -> pop -> pulse |
+| **Next** (arrow only, every slide) | `btn-next-default.svg`, `btn-next-deactive.svg` (170x62 pill) | 170x62 | inactive -> active + pulse |
+
+The arrow and the play mark are **drawn in the SVG**, so a font that fails to load cannot change
+the button. The next `<button>` keeps its text (`आगे`) for screen readers and paints it transparent.
+
+### What it replaces (Compare: old)
+
+The fleet's buttons were CSS pills: a gold `शुरू करें` pill that pulsed from the first frame and a
+text `आगे` pill, grey until active. The old play button was gold and pulsing while the greeting was
+still speaking, so it looked tappable when it should not be, and children tapped over the voice.
+
+### How each one behaves
+
+- **Play** stays **grey and ignores taps** while the start-screen greeting speaks, because a bright
+  button that does nothing reads as broken. The moment the greeting really *ends*, it turns gold
+  with one pop and a gold ring, and 0.6s later it starts the idle pulse (QA checklist: "the Play
+  button pulsates immediately after the VO is complete"). A tap stops the pulse. Never strand the
+  child: release the button on a 15s watchdog even if the greeting never reports back.
+- **Next** is grey and disabled until the slide's VO and its task are done. Then it turns gold and
+  pulses until tapped. The nudge hand **never** points at it (QA checklist: the hand only ever
+  points at things to answer, never at a button).
+- **Play tap sound:** `sfx/burst.ogg`. MTG2A04 ships it as `sfx_play`, a stand-in until the
+  standard file arrives.
+
+### Markup
+
+```html
+<!-- play: NOT the disabled attribute while waiting - see Gotchas -->
+<button class="gb-play gb-waiting" id="playBtn" type="button" aria-label="शुरू करें" aria-disabled="true">
+  <img src="assets/btn-play-blob-waiting.svg" alt="" draggable="false"></button>
+<button class="gb-next" id="nextBtn" type="button" disabled>आगे</button>
+```
+
+### CSS
+
+```css
+/* ===== FLN ANIMATION KIT: buttons BEGIN ===== */
+/* Every pulse/press is on the individual `scale` property, never `transform`, so it cannot
+   fight whatever transform positions the button (translateX(-50%) centring etc.). */
+.gb-play,.gb-next{padding:0;border:0;border-radius:0;font-size:0;color:transparent;
+  line-height:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+/* PLAY - drop-shadow on the <img>, so the shadow follows the blob (box-shadow draws a box) */
+.gb-play{position:relative;isolation:isolate;width:112px;background:none;}
+.gb-play img{width:100%;height:auto;display:block;pointer-events:none;user-select:none;
+  filter:drop-shadow(0 9px 9px rgba(12,46,92,.34)) drop-shadow(0 2px 2px rgba(12,46,92,.20));}
+.gb-play.gb-waiting{cursor:default;}
+.gb-play.gb-waiting img{filter:drop-shadow(0 5px 5px rgba(70,70,82,.22));}
+.gb-play:not(.gb-waiting):active{scale:.94;}
+.gb-play::before{content:"";position:absolute;left:8%;right:8%;top:6%;bottom:10%;border-radius:50%;
+  z-index:-1;pointer-events:none;opacity:0;}                 /* the gold ring, behind the art */
+.gb-play.gb-pop{animation:gbPop .6s cubic-bezier(.34,1.3,.5,1) both;}
+.gb-play.gb-pop::before{animation:gbHalo .75s ease-out both;}
+.gb-play.gb-pulse{animation:gbPulse 1.15s cubic-bezier(.34,.62,.3,1) infinite;}
+.gb-play.gb-pulse::before{animation:gbHalo 1.15s ease-out infinite;}
+/* NEXT - the play button's gold / grey on a 170x62 pill, arrow only */
+.gb-next{width:170px;height:62px;cursor:default;
+  background:url("assets/btn-next-deactive.svg") center/100% 100% no-repeat;
+  filter:drop-shadow(0 4px 4px rgba(70,70,82,.22));}
+.gb-next.gb-active{cursor:pointer;background-image:url("assets/btn-next-default.svg");
+  filter:drop-shadow(0 7px 7px rgba(12,46,92,.32)) drop-shadow(0 2px 2px rgba(12,46,92,.18));
+  animation:gbNextPulse 1.15s cubic-bezier(.34,.62,.3,1) infinite;}
+.gb-next.gb-active:active{animation:none;scale:.96;filter:drop-shadow(0 3px 3px rgba(12,46,92,.28));}
+@keyframes gbPop{0%{scale:1;}35%{scale:1.2;}60%{scale:.93;}80%{scale:1.05;}100%{scale:1;}}
+@keyframes gbPulse{0%,100%{scale:1;}30%{scale:1.10;}58%{scale:.985;}}
+@keyframes gbNextPulse{0%,100%{scale:1;}30%{scale:1.08;}58%{scale:.985;}}
+@keyframes gbHalo{0%{opacity:1;box-shadow:0 0 0 0 rgba(248,190,42,.60);}
+  72%{opacity:1;box-shadow:0 0 0 26px rgba(248,190,42,0);}100%{opacity:0;box-shadow:0 0 0 0 rgba(248,190,42,0);}}
+@media (prefers-reduced-motion:reduce){
+  .gb-play,.gb-play::before,.gb-next{animation:none !important;}
+}
+/* ===== FLN ANIMATION KIT: buttons END ===== */
+```
+
+### JS
+
+This needs the `core` block (for `FLNMotion.still`). The engine decides *when* a button changes
+state; this code only sets how it looks.
+
+```js
+/* ===== FLN ANIMATION KIT: buttons BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion = window.FLNMotion || {};
+  var B = M.buttons = {
+    art: { play:"assets/btn-play-blob.svg", wait:"assets/btn-play-blob-waiting.svg" },
+    /* B.play(el) -> { ready(bool), waiting(), calm() }. ready(false) = grey, taps ignored;
+       ready(true) = gold + pop (only on the grey -> gold change) + pulse 0.6s later. */
+    play: function(btn){
+      var t = 0;
+      function waiting(){ return btn.classList.contains("gb-waiting"); }
+      function ready(on){
+        var was = !waiting(), img = btn.querySelector("img");
+        clearTimeout(t);
+        btn.classList.toggle("gb-waiting", !on);
+        btn.setAttribute("aria-disabled", on ? "false" : "true");
+        if(img) img.src = on ? B.art.play : B.art.wait;
+        if(!on){ btn.classList.remove("gb-pop", "gb-pulse"); return; }
+        if(was) return;                                  // already gold: no second pop
+        btn.classList.remove("gb-pulse");
+        if(!(M.still && M.still())){
+          btn.classList.remove("gb-pop"); void btn.offsetWidth; btn.classList.add("gb-pop");
+        }
+        t = setTimeout(function(){
+          btn.classList.remove("gb-pop");
+          if(!waiting()) btn.classList.add("gb-pulse");
+        }, 600);
+      }
+      function calm(){ clearTimeout(t); btn.classList.remove("gb-pulse", "gb-pop"); }
+      return { ready: ready, waiting: waiting, calm: calm };
+    },
+    next: function(btn, on){ btn.disabled = !on; btn.classList.toggle("gb-active", !!on); }
+  };
+})();
+/* ===== FLN ANIMATION KIT: buttons END ===== */
+```
+
+How the engine wires it:
+
+```js
+var play = FLNMotion.buttons.play(document.getElementById("playBtn"));
+play.ready(false);                                   // first paint: grey
+greeting.onended = function(){ play.ready(true); };  // ENDED, not "started" or a timer
+setTimeout(function(){ play.ready(true); }, 15000);  // watchdog - never strand the child
+playBtn.onclick = function(){
+  if(play.waiting()){ startGreetingIfBlocked(); return; }  // the grey tap starts a blocked greeting
+  play.calm(); /* sfx: burst.ogg */ start();
+};
+FLNMotion.buttons.next(nextBtn, slideDone);          // on every slide state change
+```
+
+### Gotchas
+
+- **Waiting is `aria-disabled` + `.gb-waiting`, never the `disabled` attribute.** When the browser
+  blocks autoplay, the child's first tap has to *start* the greeting. A disabled button swallows
+  that tap, and the child is left staring at a grey button forever.
+- **Pop on the change, not on every call.** `ready(true)` pops only when the button was grey; a
+  second call (the watchdog after the real end) must not pop it, or restart its pulse, again.
+- **Pulse on `scale`, not `transform`.** The shipped play button baked `translateX(-50%)` into its
+  keyframes to keep its centring; copied into any other layout, it jumps sideways. `scale` combines
+  with any transform. (It needs Chrome 104 / Safari 14.1. On older WebViews the pulse simply does
+  not run; the button still works.)
+- **A page-wide `button:hover{background:...}` rule wipes the next button's art.** `button:hover`
+  (0,1,1) outranks `.gb-next` (0,1,0), and its `background` shorthand resets the image to none.
+  Grep for global `button` rules; scope them, or raise these selectors (the preview prefixes them
+  with `#game-buttons` for exactly this reason).
+- **R9:** add the SVGs you copy to the activity's `ASSET_BYTES` / preload list. The play button's
+  grey art must be loaded before the start screen shows, or it pops in.
 
 ---
 
